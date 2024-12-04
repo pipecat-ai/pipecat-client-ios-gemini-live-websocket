@@ -2,8 +2,8 @@ import Foundation
 import RTVIClientIOS
 import Daily
 
-/// An RTVI transport to connect with Daily.
-public class DailyTransport: Transport {
+/// An RTVI transport to connect with a WebSocket backend.
+public class WSPrototypeTransport: Transport {
     private var callClient: CallClient?
     private var voiceClientOptions: RTVIClientIOS.RTVIClientOptions
 
@@ -255,7 +255,7 @@ public class DailyTransport: Transport {
 
 }
 
-extension DailyTransport: CallClientDelegate {
+extension WSPrototypeTransport: CallClientDelegate {
 
     public func callClient(_ callClient: CallClient, participantJoined participant: Daily.Participant) {
         self.delegate?.onParticipantJoined(participant: participant.toRtvi())
