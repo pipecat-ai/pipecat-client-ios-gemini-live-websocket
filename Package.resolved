@@ -1,0 +1,25 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "Daily",
+        "repositoryURL": "https://github.com/daily-co/daily-client-ios.git",
+        "state": {
+          "branch": null,
+          "revision": "d0f4f54cadbfd5b69c82b8a56f14ad1c7e91e248",
+          "version": "0.24.0"
+        }
+      },
+      {
+        "package": "RTVIClientIOS",
+        "repositoryURL": "https://github.com/rtvi-ai/rtvi-client-ios.git",
+        "state": {
+          "branch": null,
+          "revision": "760caa8a2609fe4600d4b0ad7da03359407cf7a8",
+          "version": "0.2.0"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
