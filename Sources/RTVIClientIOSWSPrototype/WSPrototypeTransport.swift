@@ -46,6 +46,7 @@ public class WSPrototypeTransport: Transport {
         self.voiceClientOptions = options
         self.callClient = CallClient()
         self.callClient?.delegate = self
+        print("[pk] using WS prototype transport")
     }
 
     func updateBotUserAndTracks() {
