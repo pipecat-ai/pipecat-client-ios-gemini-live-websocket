@@ -1,7 +1,16 @@
 // MARK: - Inbound
 
+import Foundation
+
 struct ModelAudioMessage: Decodable {
     var serverContent: ServerContent
+    
+    func audioBytes() -> Data? {
+        guard let part = serverContent.modelTurn.parts.first else {
+            return nil
+        }
+        return Data(base64Encoded: part.inlineData.data)
+    }
     
     struct ServerContent: Decodable {
         var modelTurn: ModelTurn

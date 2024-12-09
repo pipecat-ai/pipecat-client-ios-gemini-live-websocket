@@ -3,7 +3,7 @@ import RTVIClientIOS
 import Daily
 
 /// An RTVI transport to connect with a WebSocket backend.
-public class WSPrototypeTransport: Transport {
+public class WSPrototypeTransport: Transport, GeminiWebSocketConnectionDelegate {
     
     // MARK: - Public
     
@@ -17,6 +17,14 @@ public class WSPrototypeTransport: Transport {
         self.options = options
         // TODO: initiatlize GeminiWebSocketConnectionOptions from RTVIClientOptions
         connection = GeminiWebSocketConnection(options: .init())
+        connection.delegate = self
+    }
+    
+    func connection(
+        _: GeminiWebSocketConnection,
+        didReceiveModelAudioBytes audioBytes: Data
+    ) {
+        print("[pk] received model audio! (length: \(audioBytes.count))")
     }
     
     // MARK: - Private

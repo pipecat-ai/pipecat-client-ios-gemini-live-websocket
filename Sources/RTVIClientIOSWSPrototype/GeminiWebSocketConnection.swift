@@ -1,5 +1,12 @@
 import Foundation
 
+protocol GeminiWebSocketConnectionDelegate: AnyObject {
+    func connection(
+        _: GeminiWebSocketConnection,
+        didReceiveModelAudioBytes audioBytes: Data
+    )
+}
+
 struct GeminiWebSocketConnectionOptions {
     // TODO: this
 }
@@ -7,6 +14,8 @@ struct GeminiWebSocketConnectionOptions {
 class GeminiWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
     
     // MARK: - Public
+    
+    public weak var delegate: GeminiWebSocketConnectionDelegate? = nil
     
     init(options: GeminiWebSocketConnectionOptions) {
         self.options = options
@@ -61,8 +70,12 @@ class GeminiWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
                             ModelAudioMessage.self,
                             from: data
                         )
-                        // TODO: call delegate or something
-                        print("[pk] received model audio!")
+                        if let audioBytes = serverMessage.audioBytes() {
+                            delegate?.connection(
+                                self,
+                                didReceiveModelAudioBytes: audioBytes
+                            )
+                        }
                     } catch {
                         continue
                     }
