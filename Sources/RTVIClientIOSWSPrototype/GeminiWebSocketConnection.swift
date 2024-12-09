@@ -1,69 +1,5 @@
 import Foundation
 
-// TODO: split types into separate files?
-
-// Outbound messages
-
-private struct SetupMessage: Encodable {
-    var setup: Setup
-    
-    struct Setup: Encodable {
-        var model: String
-    }
-    
-    init(model: String) {
-        self.setup = .init(model: model)
-    }
-}
-
-private struct TextInputMessage: Encodable {
-    var clientContent: ClientContent
-    
-    struct ClientContent: Encodable {
-        var turns: [Turn]
-        var turnComplete = true
-        
-        struct Turn: Encodable {
-            var role = "USER"
-            var parts: [Text]
-            
-            struct Text: Encodable {
-                var text: String
-            }
-        }
-    }
-    
-    init(text: String) {
-        self.clientContent = .init(
-            turns: [
-                .init(parts: [.init(text: text)])
-            ]
-        )
-    }
-}
-
-// Inbound messages
-
-private struct GeminiWebSocketModelAudioMessage: Decodable {
-    var serverContent: ServerContent
-    
-    struct ServerContent: Decodable {
-        var modelTurn: ModelTurn
-        
-        struct ModelTurn: Decodable {
-            var parts: [Part]
-            
-            struct Part: Decodable {
-                var inlineData: InlineData
-                
-                struct InlineData: Decodable {
-                    var data: String
-                }
-            }
-        }
-    }
-}
-
 struct GeminiWebSocketConnectionOptions {
     // TODO: this
 }
@@ -107,6 +43,7 @@ class GeminiWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
         // Send initial text input
         let initialText = "Hi, who are you?"
         try await sendMessage(message: TextInputMessage(text: initialText))
+        try Task.checkCancellation()
         
         // Listen for server messages
         Task {
@@ -121,7 +58,7 @@ class GeminiWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
                     print("[pk] received server message: \(String(data: data, encoding: .utf8))")
                     do {
                         let serverMessage = try decoder.decode(
-                            GeminiWebSocketModelAudioMessage.self,
+                            ModelAudioMessage.self,
                             from: data
                         )
                         // TODO: call delegate or something
