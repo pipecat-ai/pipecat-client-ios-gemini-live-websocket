@@ -15,13 +15,15 @@ public class WSPrototypeTransport: Transport {
     
     public required init(options: RTVIClientIOS.RTVIClientOptions) {
         self.options = options
-        // TODO: initialize web socket connection
+        // TODO: initiatlize GeminiWebSocketConnectionOptions from RTVIClientOptions
+        connection = GeminiWebSocketConnection(options: .init())
     }
     
     // MARK: - Private
     
-    private var options: RTVIClientOptions
+    private let options: RTVIClientOptions
     private var _state: TransportState = .disconnected
+    private let connection: GeminiWebSocketConnection
     
     public func initDevices() async throws {
         self.setState(state: .initializing)
@@ -35,7 +37,7 @@ public class WSPrototypeTransport: Transport {
     
     public func connect(authBundle: RTVIClientIOS.AuthBundle) async throws {
         self.setState(state: .connecting)
-        // TODO: connect
+        try await connection.connect()
         self.setState(state: .connected)
     }
     
@@ -99,6 +101,8 @@ public class WSPrototypeTransport: Transport {
     
     public func setState(state: RTVIClientIOS.TransportState) {
         self._state = state
+        // TODO: remove when done debugging (actually maybe already not necessary)
+        print("[pk] new state: \(state)")
         self.delegate?.onTransportStateChanged(state: self._state)
     }
     
