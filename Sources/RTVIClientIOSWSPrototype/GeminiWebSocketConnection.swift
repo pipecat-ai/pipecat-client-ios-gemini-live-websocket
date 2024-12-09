@@ -42,10 +42,31 @@ private struct TextInputMessage: Encodable {
     }
 }
 
-enum GeminiWebSocketConnectionError: Error {
+// Inbound messages
+
+private struct GeminiWebSocketModelAudioMessage: Decodable {
+    var serverContent: ServerContent
+    
+    struct ServerContent: Decodable {
+        var modelTurn: ModelTurn
+        
+        struct ModelTurn: Decodable {
+            var parts: [Part]
+            
+            struct Part: Decodable {
+                var inlineData: InlineData
+                
+                struct InlineData: Decodable {
+                    var data: String
+                }
+            }
+        }
+    }
 }
 
-struct GeminiWebSocketConnectionOptions {}
+struct GeminiWebSocketConnectionOptions {
+    // TODO: this
+}
 
 class GeminiWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
     
@@ -70,11 +91,12 @@ class GeminiWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
         let host = "preprod-generativelanguage.googleapis.com"
         let apiKey = "AIzaSyDSytBQHiU8XnOxLXWQpKnJRqhjfxUWU5U"
         let url = URL(string: "wss://\(host)/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=\(apiKey)")
-        socket = urlSession.webSocketTask(with: url!)
+        let socket = urlSession.webSocketTask(with: url!)
+        self.socket = socket
         
         // Connect
         // NOTE: at this point no need to wait for socket to open to start sending events
-        socket?.resume()
+        socket.resume()
         
         // Send initial setup message
         let model = "models/gemini-2.0-flash-exp"
@@ -85,6 +107,35 @@ class GeminiWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
         // Send initial text input
         let initialText = "Hi, who are you?"
         try await sendMessage(message: TextInputMessage(text: initialText))
+        
+        // Listen for server messages
+        Task {
+            while true {
+                let decoder = JSONDecoder()
+                
+                let message = try await socket.receive()
+                try Task.checkCancellation()
+                
+                switch message {
+                case .data(let data):
+                    print("[pk] received server message: \(String(data: data, encoding: .utf8))")
+                    do {
+                        let serverMessage = try decoder.decode(
+                            GeminiWebSocketModelAudioMessage.self,
+                            from: data
+                        )
+                        // TODO: call delegate or something
+                        print("[pk] received model audio!")
+                    } catch {
+                        continue
+                    }
+                case .string(let string):
+                    // TODO: better logging
+                    print("[pk] received server message of unexpected type: \(string)")
+                    continue
+                }
+            }
+        }
     }
     
     func urlSession(
