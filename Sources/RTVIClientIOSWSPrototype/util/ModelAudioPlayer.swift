@@ -19,10 +19,11 @@ class ModelAudioPlayer {
         )
         
         do {
-            // TODO: didn't think this should be necessary
+            // TODO: didn't think this should be necessary, but it is (otherwise will only make sound if phone is not in sient mode
             try AVAudioSession.sharedInstance().setCategory(.playback)
             try AVAudioSession.sharedInstance().setActive(true)
             try audioEngine.start()
+            try playerNode.play()
             print("[pk] is audio engine running? \(audioEngine.isRunning)")
         } catch {
             print("[pk] AudioEngine didn't start: \(error.localizedDescription)")
@@ -66,7 +67,7 @@ class ModelAudioPlayer {
 //                    playerNode.play()
 //    }
     
-    // SO (this seems like the sanest)
+    // StackOverflow (this seems like the sanest)
     // https://stackoverflow.com/questions/28048568/convert-avaudiopcmbuffer-to-nsdata-and-back
     func enqueueBytes(_ bytes: Data) {
         let pcmBuffer = AVAudioPCMBuffer(
@@ -81,7 +82,6 @@ class ModelAudioPlayer {
         (bytes as NSData).getBytes(UnsafeMutableRawPointer(channels[0]) , length: bytes.count)
         print("[pk] scheduling buffer. frames: \(pcmBuffer.frameLength)")
         playerNode.scheduleBuffer(pcmBuffer)
-        playerNode.play()
     }
     
     private let audioEngine: AVAudioEngine
