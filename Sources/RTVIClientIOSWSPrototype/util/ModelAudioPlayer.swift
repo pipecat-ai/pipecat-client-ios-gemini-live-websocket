@@ -1,12 +1,18 @@
 import AVFoundation
 
-private let audioFormat = AVAudioFormat(standardFormatWithSampleRate: 24000, channels: 1)!
+//private let audioFormat = AVAudioFormat(standardFormatWithSampleRate: 24000, channels: 1)!
+// Just for shits
+//private let audioFormat = AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: 24000, channels: 1, interleaved: false)!
 
 class ModelAudioPlayer {
     
     init() {
+        // TODO: error handling when creating all these?
         audioEngine = AVAudioEngine()
         playerNode = AVAudioPlayerNode()
+        inputAudioFormat = AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: 24000, channels: 1, interleaved: false)!
+        playerAudioFormat = AVAudioFormat(standardFormatWithSampleRate: 24000, channels: 1)!
+        inputToPlayerAudioConverter = AVAudioConverter(from: inputAudioFormat, to: playerAudioFormat)!
     }
     
     func start() {
@@ -15,7 +21,10 @@ class ModelAudioPlayer {
         audioEngine.connect(
             playerNode,
             to: audioEngine.mainMixerNode,
-            format: audioFormat
+            // doesn't seem to support pcm 16 here.
+            // setting to nil doesn't work (defaults to 2 channels).
+            // so, this?
+            format: playerAudioFormat
         )
         
         do {
@@ -69,21 +78,60 @@ class ModelAudioPlayer {
     
     // StackOverflow (this seems like the sanest)
     // https://stackoverflow.com/questions/28048568/convert-avaudiopcmbuffer-to-nsdata-and-back
+//    func enqueueBytes(_ bytes: Data) {
+//        let pcmBuffer = AVAudioPCMBuffer(
+//            pcmFormat: audioFormat,
+//            frameCapacity: UInt32(bytes.count) / audioFormat.streamDescription.pointee.mBytesPerFrame
+//        )!
+//        pcmBuffer.frameLength = pcmBuffer.frameCapacity
+//        let channels = UnsafeBufferPointer(
+//            start: pcmBuffer.floatChannelData,
+//            count: Int(pcmBuffer.format.channelCount)
+//        )
+//        (bytes as NSData).getBytes(UnsafeMutableRawPointer(channels[0]) , length: bytes.count)
+//        print("[pk] scheduling buffer. frames: \(pcmBuffer.frameLength)")
+//        
+//        // debugging
+//        var arr = Array<Int16>(repeating: 0, count: bytes.count/MemoryLayout<Int16>.stride)
+//        _ = arr.withUnsafeMutableBytes { bytes.copyBytes(to: $0) }
+//        print("frames as int16s: \(arr)") // [32, 4, 4294967295]
+//        // end debugging
+//        
+//        playerNode.scheduleBuffer(pcmBuffer)
+//    }
+    
+    // StackOverflow (this seems like the sanest)
+    // But for int16 format instead of float32
+    // https://stackoverflow.com/questions/28048568/convert-avaudiopcmbuffer-to-nsdata-and-back
     func enqueueBytes(_ bytes: Data) {
-        let pcmBuffer = AVAudioPCMBuffer(
-            pcmFormat: audioFormat,
-            frameCapacity: UInt32(bytes.count) / audioFormat.streamDescription.pointee.mBytesPerFrame
+        // Prepare input buffer
+        let inputBuffer = AVAudioPCMBuffer(
+            pcmFormat: inputAudioFormat,
+            frameCapacity: UInt32(bytes.count) / inputAudioFormat.streamDescription.pointee.mBytesPerFrame
         )!
-        pcmBuffer.frameLength = pcmBuffer.frameCapacity
+        inputBuffer.frameLength = inputBuffer.frameCapacity
         let channels = UnsafeBufferPointer(
-            start: pcmBuffer.floatChannelData,
-            count: Int(pcmBuffer.format.channelCount)
+            start: inputBuffer.int16ChannelData,
+            count: Int(inputBuffer.format.channelCount)
         )
         (bytes as NSData).getBytes(UnsafeMutableRawPointer(channels[0]) , length: bytes.count)
-        print("[pk] scheduling buffer. frames: \(pcmBuffer.frameLength)")
-        playerNode.scheduleBuffer(pcmBuffer)
+        
+        // Convert to player-ready buffer
+        let playerBuffer = AVAudioPCMBuffer(
+            pcmFormat: playerAudioFormat,
+            frameCapacity: inputBuffer.frameCapacity
+        )!
+        // TODO: error handling
+        try! inputToPlayerAudioConverter.convert(to: playerBuffer, from: inputBuffer)
+        
+        // Schedule it for playing
+        print("[pk] scheduling buffer. frames: \(playerBuffer.frameLength)")
+        playerNode.scheduleBuffer(playerBuffer)
     }
     
     private let audioEngine: AVAudioEngine
     private let playerNode: AVAudioPlayerNode
+    private let inputAudioFormat: AVAudioFormat
+    private let playerAudioFormat: AVAudioFormat
+    private let inputToPlayerAudioConverter: AVAudioConverter
 }

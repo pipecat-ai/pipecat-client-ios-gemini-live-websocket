@@ -4,19 +4,19 @@
 import PackageDescription
 
 let package = Package(
-    name: "RTVIClientIOSWSPrototype",
+    name: "PipecatClientIOSWSPrototype",
     platforms: [
         .iOS(.v13)
     ],
     products: [
         .library(
-            name: "RTVIClientIOSWSPrototype",
+            name: "PipecatClientIOSWSPrototype",
             targets: ["RTVIClientIOSWSPrototype"]),
     ],
     dependencies: [
         // Local dependency
-        .package(path: "../rtvi-client-ios"),
-        // .package(url: "https://github.com/rtvi-ai/rtvi-client-ios.git", from: "0.2.0"),
+//        .package(path: "../rtvi-client-ios"),
+         .package(url: "https://github.com/pipecat-ai/pipecat-client-ios.git", from: "0.3.0"),
         // TODO: we can remove this once we're done with the prototyping. Useful to have it here to refer to types
         .package(url: "https://github.com/daily-co/daily-client-ios.git", from: "0.23.0")
     ],
@@ -24,7 +24,7 @@ let package = Package(
         .target(
             name: "RTVIClientIOSWSPrototype",
             dependencies: [
-                .product(name: "RTVIClientIOS", package: "rtvi-client-ios"),
+                .product(name: "PipecatClientIOS", package: "pipecat-client-ios"),
                 // TODO: we can remove this once we're done with the prototyping. Useful to have it here to refer to types
                 .product(name: "Daily", package: "daily-client-ios")
             ]),
