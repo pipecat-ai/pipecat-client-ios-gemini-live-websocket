@@ -17,7 +17,6 @@ public class WSPrototypeTransport: Transport, GeminiWebSocketConnectionDelegate 
         self.options = options
         // TODO: initiatlize GeminiWebSocketConnectionOptions from RTVIClientOptions
         connection = GeminiWebSocketConnection(options: .init())
-        modelAudioPlayer = ModelAudioPlayer()
         connection.delegate = self
     }
     
@@ -28,13 +27,6 @@ public class WSPrototypeTransport: Transport, GeminiWebSocketConnectionDelegate 
         print("[pk] received model audio! (length: \(audioBytes.count))")
         modelAudioPlayer.enqueueBytes(audioBytes)
     }
-    
-    // MARK: - Private
-    
-    private let options: RTVIClientOptions
-    private var _state: TransportState = .disconnected
-    private let connection: GeminiWebSocketConnection
-    private let modelAudioPlayer: ModelAudioPlayer
     
     public func initDevices() async throws {
         self.setState(state: .initializing)
@@ -48,8 +40,10 @@ public class WSPrototypeTransport: Transport, GeminiWebSocketConnectionDelegate 
     
     public func connect(authBundle: RTVIClientIOS.AuthBundle) async throws {
         self.setState(state: .connecting)
-        // TODO: this probably needs a `try`
-        modelAudioPlayer.start()
+        try modelAudioPlayer.start()
+        if options.enableMic {
+            try audioRecorder.start()
+        }
         try await connection.connect()
         self.setState(state: .connected)
     }
@@ -139,5 +133,13 @@ public class WSPrototypeTransport: Transport, GeminiWebSocketConnectionDelegate 
         // TODO: later
         return nil
     }
+    
+    // MARK: - Private
+    
+    private let options: RTVIClientOptions
+    private var _state: TransportState = .disconnected
+    private let connection: GeminiWebSocketConnection
+    private let modelAudioPlayer = ModelAudioPlayer()
+    private let audioRecorder = AudioRecorder()
 }
 

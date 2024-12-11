@@ -6,7 +6,7 @@ class ModelAudioPlayer {
         // TODO: error handling when creating all these?
         audioEngine = AVAudioEngine()
         playerNode = AVAudioPlayerNode()
-        inputAudioFormat = AudioConstants.format
+        inputAudioFormat = AudioCommon.format
         playerAudioFormat = AVAudioFormat(
             standardFormatWithSampleRate: inputAudioFormat.sampleRate,
             channels: inputAudioFormat.channelCount
@@ -14,9 +14,10 @@ class ModelAudioPlayer {
         inputToPlayerAudioConverter = AVAudioConverter(from: inputAudioFormat, to: playerAudioFormat)!
     }
     
-    func start() {
-        audioEngine.attach(playerNode)
+    func start() throws {
+        try AudioCommon.prepareAudioSession()
         
+        audioEngine.attach(playerNode)
         audioEngine.connect(
             playerNode,
             to: audioEngine.mainMixerNode,
@@ -25,18 +26,8 @@ class ModelAudioPlayer {
             // so, this?
             format: playerAudioFormat
         )
-        
-        do {
-            // TODO: didn't think this should be necessary, but it is (otherwise will only make sound if phone is not in sient mode
-            try AVAudioSession.sharedInstance().setCategory(.playback)
-            try AVAudioSession.sharedInstance().setActive(true)
-            try audioEngine.start()
-            try playerNode.play()
-            print("[pk] is audio engine running? \(audioEngine.isRunning)")
-        } catch {
-            print("[pk] AudioEngine didn't start: \(error.localizedDescription)")
-        }
-
+        try audioEngine.start()
+        try playerNode.play()
     }
     
     // Copilot version
