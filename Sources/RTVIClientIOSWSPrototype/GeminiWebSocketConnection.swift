@@ -11,6 +11,7 @@ struct GeminiWebSocketConnectionOptions {
     // TODO: this
 }
 
+// TODO: rename to GeminiLiveWebSocketConnection
 class GeminiWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
     
     // MARK: - Public

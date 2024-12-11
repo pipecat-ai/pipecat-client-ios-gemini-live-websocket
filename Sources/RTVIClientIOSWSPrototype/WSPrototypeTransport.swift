@@ -48,6 +48,7 @@ public class WSPrototypeTransport: Transport, GeminiWebSocketConnectionDelegate 
     
     public func connect(authBundle: RTVIClientIOS.AuthBundle) async throws {
         self.setState(state: .connecting)
+        // TODO: this probably needs a `try`
         modelAudioPlayer.start()
         try await connection.connect()
         self.setState(state: .connected)

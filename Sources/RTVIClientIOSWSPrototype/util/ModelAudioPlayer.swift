@@ -1,17 +1,16 @@
 import AVFoundation
 
-//private let audioFormat = AVAudioFormat(standardFormatWithSampleRate: 24000, channels: 1)!
-// Just for shits
-//private let audioFormat = AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: 24000, channels: 1, interleaved: false)!
-
 class ModelAudioPlayer {
     
     init() {
         // TODO: error handling when creating all these?
         audioEngine = AVAudioEngine()
         playerNode = AVAudioPlayerNode()
-        inputAudioFormat = AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: 24000, channels: 1, interleaved: false)!
-        playerAudioFormat = AVAudioFormat(standardFormatWithSampleRate: 24000, channels: 1)!
+        inputAudioFormat = AudioConstants.format
+        playerAudioFormat = AVAudioFormat(
+            standardFormatWithSampleRate: inputAudioFormat.sampleRate,
+            channels: inputAudioFormat.channelCount
+        )!
         inputToPlayerAudioConverter = AVAudioConverter(from: inputAudioFormat, to: playerAudioFormat)!
     }
     
