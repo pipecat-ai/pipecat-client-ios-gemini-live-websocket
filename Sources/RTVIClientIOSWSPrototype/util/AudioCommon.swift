@@ -8,7 +8,10 @@ enum AudioCommon {
     
     static func prepareAudioSession() throws {
         // TODO: didn't think this should be necessary, but it is (otherwise will only make sound if phone is not in sient mode
-        try AVAudioSession.sharedInstance().setCategory(.playAndRecord) // TODO: move to common place
+        try AVAudioSession.sharedInstance().setCategory(
+            .playAndRecord,
+            options: .defaultToSpeaker
+        )
         try AVAudioSession.sharedInstance().setActive(true)
     }
 }

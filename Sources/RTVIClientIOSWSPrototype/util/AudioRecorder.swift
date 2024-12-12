@@ -32,8 +32,18 @@ class AudioRecorder {
                 inputFormat: inputFormat,
                 targetFormat: AudioCommon.format,
                 formatConverter: formatConverter)
-            // TODO: you are here
-            print("[pk] captured and converted audio frames: \(targetBuffer.frameLength)")
+            
+            // Convert buffer to data
+            let channels = UnsafeBufferPointer(
+                start: targetBuffer.int16ChannelData,
+                count: Int(targetBuffer.format.channelCount)
+            )
+            let data = NSData(
+                bytes: channels[0],
+                length: Int(targetBuffer.frameCapacity * targetBuffer.format.streamDescription.pointee.mBytesPerFrame)
+            )
+            
+            self.getAudioContinuation?.yield(data as Data)
         }
         
         // Now start the engine
@@ -46,11 +56,18 @@ class AudioRecorder {
         
     }
     
+    func getAudio() -> AsyncStream<Data> {
+        return AsyncStream { continuation in
+            getAudioContinuation = continuation
+        }
+    }
+    
     // MARK: - Private
     
     private var didSetup = false
     private let audioEngine = AVAudioEngine()
     private let audioQueue = DispatchQueue(label: "com.pipecat.GeminiLiveWebSocketTransport.AudioRecorder")
+    private var getAudioContinuation: AsyncStream<Data>.Continuation?
     
     private static func convertToTargetFormat(
         inputBuffer: AVAudioPCMBuffer,
@@ -86,7 +103,7 @@ class AudioRecorder {
                 return segment
             }
         if let error {
-            print("[pk] Error converting raw mic audio data to data in target format: \(error)")
+            print("[pk] Error converting raw mic audio data into target format: \(error)")
         }
         return targetBuffer
     }

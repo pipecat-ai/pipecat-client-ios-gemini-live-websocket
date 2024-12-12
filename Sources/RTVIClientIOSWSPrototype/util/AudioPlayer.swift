@@ -1,6 +1,6 @@
 import AVFoundation
 
-class ModelAudioPlayer {
+class AudioPlayer {
     
     init() {
         // TODO: error handling when creating all these?
@@ -115,7 +115,7 @@ class ModelAudioPlayer {
         try! inputToPlayerAudioConverter.convert(to: playerBuffer, from: inputBuffer)
         
         // Schedule it for playing
-        print("[pk] scheduling buffer. frames: \(playerBuffer.frameLength)")
+        print("[pk] scheduling buffer to play. frames: \(playerBuffer.frameLength)")
         playerNode.scheduleBuffer(playerBuffer)
     }
     

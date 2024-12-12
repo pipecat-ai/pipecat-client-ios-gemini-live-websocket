@@ -11,7 +11,6 @@ struct GeminiWebSocketConnectionOptions {
     // TODO: this
 }
 
-// TODO: rename to GeminiLiveWebSocketConnection
 class GeminiWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
     
     // MARK: - Public
@@ -46,13 +45,21 @@ class GeminiWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
         
         // Send initial setup message
         let model = "models/gemini-2.0-flash-exp"
-        try await sendMessage(message: SetupMessage(model: model))
+        try await sendMessage(
+            message: WebSocketMessages.Outbound.Setup(
+                model: model
+            )
+        )
         try Task.checkCancellation()
         
         // TODO: remove after testing
         // Send initial text input
         let initialText = "Hi, who are you?"
-        try await sendMessage(message: TextInputMessage(text: initialText))
+        try await sendMessage(
+            message: WebSocketMessages.Outbound.TextInput(
+                text: initialText
+            )
+        )
         try Task.checkCancellation()
         
         // Listen for server messages
@@ -65,10 +72,11 @@ class GeminiWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
                 
                 switch message {
                 case .data(let data):
+                    // TODO: remove after testing
                     print("[pk] received server message: \(String(data: data, encoding: .utf8))")
                     do {
                         let serverMessage = try decoder.decode(
-                            ModelAudioMessage.self,
+                            WebSocketMessages.Inbound.AudioOutput.self,
                             from: data
                         )
                         if let audioBytes = serverMessage.audioBytes() {
@@ -87,6 +95,13 @@ class GeminiWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
                 }
             }
         }
+    }
+    
+    func sendUserAudio(_ audio: Data) async throws {
+        // TODO: first check if we've successfully run through connect()?
+        try await sendMessage(
+            message: WebSocketMessages.Outbound.AudioInput(audio: audio)
+        )
     }
     
     func urlSession(
@@ -114,11 +129,11 @@ class GeminiWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
     private func sendMessage(message: Encodable) async throws {
         let encoder = JSONEncoder()
         
+        // TODO: remove after testing
         let messageString = try! String(
             data: encoder.encode(message),
             encoding: .utf8
         )!
-        // TODO: remove after testing
         print("[pk] sending message: \(messageString)")
         
         try await socket?.send(

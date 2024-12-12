@@ -25,7 +25,7 @@ public class WSPrototypeTransport: Transport, GeminiWebSocketConnectionDelegate 
         didReceiveModelAudioBytes audioBytes: Data
     ) {
         print("[pk] received model audio! (length: \(audioBytes.count))")
-        modelAudioPlayer.enqueueBytes(audioBytes)
+        audioPlayer.enqueueBytes(audioBytes)
     }
     
     public func initDevices() async throws {
@@ -40,11 +40,11 @@ public class WSPrototypeTransport: Transport, GeminiWebSocketConnectionDelegate 
     
     public func connect(authBundle: RTVIClientIOS.AuthBundle) async throws {
         self.setState(state: .connecting)
-        try modelAudioPlayer.start()
-        if options.enableMic {
-            try audioRecorder.start()
-        }
+        try audioPlayer.start()
         try await connection.connect()
+        if options.enableMic {
+            try startAudioInput()
+        }
         self.setState(state: .connected)
     }
     
@@ -139,7 +139,21 @@ public class WSPrototypeTransport: Transport, GeminiWebSocketConnectionDelegate 
     private let options: RTVIClientOptions
     private var _state: TransportState = .disconnected
     private let connection: GeminiWebSocketConnection
-    private let modelAudioPlayer = ModelAudioPlayer()
+    private let audioPlayer = AudioPlayer()
     private let audioRecorder = AudioRecorder()
+    
+    private func startAudioInput() throws {
+        try audioRecorder.start()
+        Task {
+            for await audio in audioRecorder.getAudio() {
+                do {
+                    try await connection.sendUserAudio(audio)
+                } catch {
+                    // TODO: better error handling
+                    print("[pk] send user audio failed: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
 }
 
