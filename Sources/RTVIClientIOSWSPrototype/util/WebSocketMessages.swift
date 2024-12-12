@@ -94,9 +94,7 @@ enum WebSocketMessages {
                     mediaChunks: [
                         .init(
                             mimeType: "audio/pcm;rate=\(Int(AudioCommon.format.sampleRate))",
-//                            data: audio.base64EncodedString()
-                            // Hm...this avoids the WebSocket 1007 disconnect (which happens with the above), but clearly this is junk/garbled audio. The model keeps thinking we're interrupting with nonsense.
-                            data: String(data: audio.base64EncodedData(), encoding: .utf8)!
+                            data: audio.base64EncodedString()
                         )
                     ]
                 )

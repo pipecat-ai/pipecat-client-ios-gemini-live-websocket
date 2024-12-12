@@ -35,6 +35,7 @@ class AudioRecorder {
             
             // Convert buffer to data
             let channels = UnsafeBufferPointer(
+                // (Hack: we happen to know that target format is Int16)
                 start: targetBuffer.int16ChannelData,
                 count: Int(targetBuffer.format.channelCount)
             )
@@ -77,7 +78,7 @@ class AudioRecorder {
     {
         let targetBuffer = AVAudioPCMBuffer(
             pcmFormat: targetFormat,
-            frameCapacity: AVAudioFrameCount(targetFormat.sampleRate) * 2 // to be safe
+            frameCapacity: inputBuffer.frameLength
         )!
         var error: NSError?
         var inputIndex: AVAudioFramePosition = 0
@@ -102,6 +103,8 @@ class AudioRecorder {
                 )
                 return segment
             }
+        // UGH this feels like a hack. But somehow the format converter is assigning a nonsense frameLength to the targetBuffer?
+        targetBuffer.frameLength = inputBuffer.frameLength
         if let error {
             print("[pk] Error converting raw mic audio data into target format: \(error)")
         }
