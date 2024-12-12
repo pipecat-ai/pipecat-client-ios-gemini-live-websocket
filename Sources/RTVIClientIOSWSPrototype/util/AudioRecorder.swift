@@ -40,7 +40,7 @@ class AudioRecorder {
             )
             let data = NSData(
                 bytes: channels[0],
-                length: Int(targetBuffer.frameCapacity * targetBuffer.format.streamDescription.pointee.mBytesPerFrame)
+                length: Int(targetBuffer.frameLength * targetBuffer.format.streamDescription.pointee.mBytesPerFrame)
             )
             
             self.getAudioContinuation?.yield(data as Data)
