@@ -14,6 +14,7 @@ class AudioRecorder {
         try AudioCommon.prepareAudioSession()
         
         // Setup the audio engine for recording
+        try audioEngine.inputNode.setVoiceProcessingEnabled(true) // important for ignoring output from the phone itself
         let inputNode = audioEngine.inputNode
         let inputFormat = inputNode.outputFormat(forBus: 0)
         let formatConverter = AVAudioConverter(
@@ -103,9 +104,9 @@ class AudioRecorder {
                 )
                 return segment
             }
-        // UGH this feels like a hack. But somehow the format converter is assigning a nonsense frameLength to the targetBuffer?
+        // UGH this feels like a total hack. But somehow the format converter is assigning a nonsense frameLength to the targetBuffer?
         targetBuffer.frameLength = inputBuffer.frameLength
-        if let error {
+        if let error {  
             print("[pk] Error converting raw mic audio data into target format: \(error)")
         }
         return targetBuffer
