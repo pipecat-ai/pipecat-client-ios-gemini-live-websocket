@@ -57,6 +57,7 @@ public class WSPrototypeTransport: Transport, GeminiWebSocketConnectionDelegate 
         }
         
         self.setState(state: .connected)
+        self.delegate?.onConnected()
     }
     
     public func disconnect() async throws {
