@@ -30,27 +30,43 @@ public class WSPrototypeTransport: Transport, GeminiWebSocketConnectionDelegate 
     
     public func initDevices() async throws {
         self.setState(state: .initializing)
-        // TODO: later
+        
+        // wire up audio input
+        wireUpAudioInput()
+        
         self.setState(state: .initialized)
     }
     
     public func release() {
-        // TODO: later
+        // stop audio input
+        audioRecorder.stop()
     }
     
     public func connect(authBundle: RTVIClientIOS.AuthBundle) async throws {
         self.setState(state: .connecting)
+        
+        // start audio player
         try audioPlayer.start()
+        
+        // start connecting
         try await connection.connect()
+        
+        // start audio input if needed
         if options.enableMic {
-            try startAudioInput()
+            try audioRecorder.resume()
         }
+        
         self.setState(state: .connected)
     }
     
     public func disconnect() async throws {
+        // stop websocket connection
         // TODO: later
-        // TODO: make sure to stop audio player
+        
+        // stop audio player
+        // TODO: later
+        
+        setState(state: .disconnected)
     }
     
     public func getAllMics() -> [RTVIClientIOS.MediaDeviceInfo] {
@@ -82,7 +98,11 @@ public class WSPrototypeTransport: Transport, GeminiWebSocketConnectionDelegate 
     }
     
     public func enableMic(enable: Bool) async throws {
-        // TODO: later
+        if enable {
+            try audioRecorder.resume()
+        } else {
+            audioRecorder.pause()
+        }
     }
     
     public func enableCam(enable: Bool) async throws {
@@ -95,8 +115,7 @@ public class WSPrototypeTransport: Transport, GeminiWebSocketConnectionDelegate 
     }
     
     public func isMicEnabled() -> Bool {
-        // TODO: later
-        return false
+        return audioRecorder.isRecording
     }
     
     public func sendMessage(message: RTVIClientIOS.RTVIMessageOutbound) throws {
@@ -142,10 +161,9 @@ public class WSPrototypeTransport: Transport, GeminiWebSocketConnectionDelegate 
     private let audioPlayer = AudioPlayer()
     private let audioRecorder = AudioRecorder()
     
-    private func startAudioInput() throws {
-        try audioRecorder.start()
+    private func wireUpAudioInput() {
         Task {
-            for await audio in audioRecorder.getAudio() {
+            for await audio in audioRecorder.streamAudio() {
                 do {
                     try await connection.sendUserAudio(audio)
                 } catch {

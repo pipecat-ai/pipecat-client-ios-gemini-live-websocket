@@ -4,7 +4,11 @@ class AudioRecorder {
 
     // MARK: - Public
     
-    func start() throws {
+    var isRecording: Bool {
+        audioEngine.isRunning
+    }
+    
+    func resume() throws {
         // If setup already happened, just start the engine
         if didSetup {
             try audioEngine.start()
@@ -45,7 +49,7 @@ class AudioRecorder {
                 length: Int(targetBuffer.frameLength * targetBuffer.format.streamDescription.pointee.mBytesPerFrame)
             )
             
-            self.getAudioContinuation?.yield(data as Data)
+            self.streamAudioContinuation?.yield(data as Data)
         }
         
         // Now start the engine
@@ -54,13 +58,18 @@ class AudioRecorder {
         didSetup = true
     }
     
-    func stop() {
-        
+    func pause() {
+        audioEngine.pause()
     }
     
-    func getAudio() -> AsyncStream<Data> {
+    func stop() {
+        audioEngine.stop()
+        streamAudioContinuation?.finish()
+    }
+    
+    func streamAudio() -> AsyncStream<Data> {
         return AsyncStream { continuation in
-            getAudioContinuation = continuation
+            streamAudioContinuation = continuation
         }
     }
     
@@ -69,7 +78,7 @@ class AudioRecorder {
     private var didSetup = false
     private let audioEngine = AVAudioEngine()
     private let audioQueue = DispatchQueue(label: "com.pipecat.GeminiLiveWebSocketTransport.AudioRecorder")
-    private var getAudioContinuation: AsyncStream<Data>.Continuation?
+    private var streamAudioContinuation: AsyncStream<Data>.Continuation?
     
     private static func convertToTargetFormat(
         inputBuffer: AVAudioPCMBuffer,
@@ -106,7 +115,7 @@ class AudioRecorder {
             }
         // UGH this feels like a total hack. But somehow the format converter is assigning a nonsense frameLength to the targetBuffer?
         targetBuffer.frameLength = inputBuffer.frameLength
-        if let error {  
+        if let error {
             print("[pk] Error converting raw mic audio data into target format: \(error)")
         }
         return targetBuffer
