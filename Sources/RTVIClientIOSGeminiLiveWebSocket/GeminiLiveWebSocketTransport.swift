@@ -2,8 +2,8 @@ import Foundation
 import RTVIClientIOS
 import Daily
 
-/// An RTVI transport to connect with a WebSocket backend.
-public class WSPrototypeTransport: Transport, GeminiWebSocketConnectionDelegate {
+/// An RTVI transport to connect with the Gemini Live WebSocket backend.
+public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnection.Delegate {
     
     // MARK: - Public
     
@@ -15,13 +15,13 @@ public class WSPrototypeTransport: Transport, GeminiWebSocketConnectionDelegate 
     
     public required init(options: RTVIClientIOS.RTVIClientOptions) {
         self.options = options
-        // TODO: initiatlize GeminiWebSocketConnectionOptions from RTVIClientOptions
-        connection = GeminiWebSocketConnection(options: .init())
+        // TODO: initiatlize GeminiLiveWebSocketConnection.Options from RTVIClientOptions
+        connection = GeminiLiveWebSocketConnection(options: .init())
         connection.delegate = self
     }
     
     func connection(
-        _: GeminiWebSocketConnection,
+        _: GeminiLiveWebSocketConnection,
         didReceiveModelAudioBytes audioBytes: Data
     ) {
         print("[pk] received model audio! (length: \(audioBytes.count))")
@@ -158,7 +158,7 @@ public class WSPrototypeTransport: Transport, GeminiWebSocketConnectionDelegate 
     
     private let options: RTVIClientOptions
     private var _state: TransportState = .disconnected
-    private let connection: GeminiWebSocketConnection
+    private let connection: GeminiLiveWebSocketConnection
     private let audioPlayer = AudioPlayer()
     private let audioRecorder = AudioRecorder()
     

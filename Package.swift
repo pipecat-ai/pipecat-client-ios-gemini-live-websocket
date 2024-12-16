@@ -4,14 +4,14 @@
 import PackageDescription
 
 let package = Package(
-    name: "PipecatClientIOSWSPrototype",
+    name: "PipecatClientIOSGeminiLiveWebSocket",
     platforms: [
         .iOS(.v13)
     ],
     products: [
         .library(
-            name: "PipecatClientIOSWSPrototype",
-            targets: ["RTVIClientIOSWSPrototype"]),
+            name: "PipecatClientIOSGeminiLiveWebSocket",
+            targets: ["RTVIClientIOSGeminiLiveWebSocket"]),
     ],
     dependencies: [
         // Local dependency
@@ -22,14 +22,14 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "RTVIClientIOSWSPrototype",
+            name: "RTVIClientIOSGeminiLiveWebSocket",
             dependencies: [
                 .product(name: "PipecatClientIOS", package: "pipecat-client-ios"),
                 // TODO: we can remove this once we're done with the prototyping. Useful to have it here to refer to types
                 .product(name: "Daily", package: "daily-client-ios")
             ]),
         .testTarget(
-            name: "RTVIClientIOSWSPrototypeTests",
-            dependencies: ["RTVIClientIOSWSPrototype"]),
+            name: "RTVIClientIOSGeminiLiveWebSocketTests",
+            dependencies: ["RTVIClientIOSGeminiLiveWebSocket"]),
     ]
 )

@@ -1,23 +1,23 @@
 import Foundation
 
-protocol GeminiWebSocketConnectionDelegate: AnyObject {
-    func connection(
-        _: GeminiWebSocketConnection,
-        didReceiveModelAudioBytes audioBytes: Data
-    )
-}
-
-struct GeminiWebSocketConnectionOptions {
-    // TODO: this
-}
-
-class GeminiWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
+class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
     
     // MARK: - Public
     
-    public weak var delegate: GeminiWebSocketConnectionDelegate? = nil
+    struct Options {
+        // TODO: this
+    }
     
-    init(options: GeminiWebSocketConnectionOptions) {
+    protocol Delegate: AnyObject {
+        func connection(
+            _: GeminiLiveWebSocketConnection,
+            didReceiveModelAudioBytes audioBytes: Data
+        )
+    }
+    
+    public weak var delegate: Delegate? = nil
+    
+    init(options: Options) {
         self.options = options
     }
     
@@ -123,7 +123,7 @@ class GeminiWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
     
     // MARK: - Private
     
-    private let options: GeminiWebSocketConnectionOptions
+    private let options: GeminiLiveWebSocketConnection.Options
     private var socket: URLSessionWebSocketTask?
     
     private func sendMessage(message: Encodable) async throws {

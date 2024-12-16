@@ -1,7 +1,7 @@
 import XCTest
 @testable import RTVIClientIOSWSPrototype
 
-final class RTVIClientIOSWSPrototypeTests: XCTestCase {
+final class RTVIClientIOSGeminiLiveWebSocketTests: XCTestCase {
     func testExample() throws {
         // XCTest Documentation
         // https://developer.apple.com/documentation/xctest
