@@ -42,7 +42,7 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
         audioRecorder.stop()
     }
     
-    public func connect(authBundle: RTVIClientIOS.AuthBundle) async throws {
+    public func connect(authBundle: RTVIClientIOS.AuthBundle?) async throws {
         self.setState(state: .connecting)
         
         // start audio player
