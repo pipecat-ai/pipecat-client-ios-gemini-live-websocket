@@ -1,6 +1,7 @@
 import Foundation
 import RTVIClientIOS
 import Daily
+import OSLog
 
 /// An RTVI transport to connect with the Gemini Live WebSocket backend.
 public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnection.Delegate {
@@ -75,7 +76,7 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
     }
     
     public func getAllCams() -> [RTVIClientIOS.MediaDeviceInfo] {
-        // TODO: later
+        logOperationNotSupported(#function)
         return []
     }
     
@@ -84,7 +85,7 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
     }
     
     public func updateCam(camId: RTVIClientIOS.MediaDeviceId) async throws {
-        // TODO: later
+        logOperationNotSupported(#function)
     }
     
     public func selectedMic() -> RTVIClientIOS.MediaDeviceInfo? {
@@ -93,7 +94,7 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
     }
     
     public func selectedCam() -> RTVIClientIOS.MediaDeviceInfo? {
-        // TODO: later
+        logOperationNotSupported(#function)
         return nil
     }
     
@@ -106,11 +107,11 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
     }
     
     public func enableCam(enable: Bool) async throws {
-        // TODO: later
+        logOperationNotSupported(#function)
     }
     
     public func isCamEnabled() -> Bool {
-        // TODO: later
+        logOperationNotSupported(#function)
         return false
     }
     
@@ -119,7 +120,8 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
     }
     
     public func sendMessage(message: RTVIClientIOS.RTVIMessageOutbound) throws {
-        // TODO: later
+        // TODO: later. Should mostly logNotSupported() for most messages, with a few exceptions. Make logNotSupported() more specific.
+        logOperationNotSupported(#function)
     }
     
     public func state() -> RTVIClientIOS.TransportState {
@@ -172,6 +174,10 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
                 }
             }
         }
+    }
+    
+    private func logOperationNotSupported(_ operationName: String) {
+        Logger.shared.warn("\(operationName) not supported")
     }
 }
 
