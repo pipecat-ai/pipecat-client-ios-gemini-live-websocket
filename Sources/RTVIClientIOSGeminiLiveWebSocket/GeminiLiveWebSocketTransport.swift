@@ -123,28 +123,15 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
         if let data = message.decodeActionData(), data.service == "llm" && data.action == "append_to_messages" {
             // TODO: remove log
             print("append_to_messages detected!")
-            // TODO: refactor?
-            var messages: [WebSocketMessages.Outbound.TextInput] = []
             let messagesArgument = data.arguments?.first { $0.name == "messages" }
-            if case let .array(messageValues) = messagesArgument?.value {
-                for messageValue in messageValues {
-                    if case let .object(messageObject) = messageValue {
-                        let roleValue = messageObject["role"]
-                        let contentValue = messageObject["content"]
-                        if case let .string(role) = roleValue {
-                            if case let .string(content) = contentValue {
-                                messages.append(.init(text: content, role: role))
-                            }
-                        }
+            if let messages = messagesArgument?.value.toMessagesArray() {
+                Task {
+                    for message in messages {
+                        try await connection.sendMessage(message: message)
                     }
+                    // TODO: send faked "response" from server back to client to complete the action
+                    // TODO: check whether system messages are supported, and whether multiple messages can be enqueued at once
                 }
-            }
-            Task {
-                for message in messages {
-                    try await connection.sendMessage(message: message)
-                }
-                // TODO: send faked "response" from server back to client to complete the action
-                // TODO: check whether system messages are supported, and whether multiple messages can be enqueued at once
             }
         } else {
             logOperationNotSupported("\(#function), except for append_to_messages actions")

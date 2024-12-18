@@ -21,9 +21,24 @@ private extension [ServiceConfig] {
     }
     
     var initialMessages: [WebSocketMessages.Outbound.TextInput] {
-        var messages: [WebSocketMessages.Outbound.TextInput] = []
         let initialMessagesKeyOption = llmConfig?.options.first { $0.name == "initial_messages" }
-        if case let .array(messageValues) = initialMessagesKeyOption?.value {
+        return initialMessagesKeyOption?.value.toMessagesArray() ?? []
+    }
+    
+    var generationConfig: Value? {
+        llmConfig?.options.first { $0.name == "generation_config" }?.value
+    }
+    
+    private var llmConfig: ServiceConfig? {
+        first { $0.service == "llm" }
+    }
+}
+
+extension Value {
+    // Tries to parse this options Value as an array of LLM messages, converted to WebSocketMessages.Outbound.TextInput
+    func toMessagesArray() -> [WebSocketMessages.Outbound.TextInput] {
+        var messages: [WebSocketMessages.Outbound.TextInput] = []
+        if case let .array(messageValues) = self {
             for messageValue in messageValues {
                 if case let .object(messageObject) = messageValue {
                     let roleValue = messageObject["role"]
@@ -37,13 +52,5 @@ private extension [ServiceConfig] {
             }
         }
         return messages
-    }
-    
-    var generationConfig: Value? {
-        llmConfig?.options.first { $0.name == "generation_config" }?.value
-    }
-    
-    private var llmConfig: ServiceConfig? {
-        first { $0.service == "llm" }
     }
 }
