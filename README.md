@@ -23,18 +23,34 @@ and add `"PipecatClientIOSGeminiLiveWebSocket"` to your application/library targ
 Instantiate a `VoiceClient` instance, wire up the bot's audio, and start the conversation:
 
 ```swift
-let client = GeminiLiveWebSocketVoiceClient(
-    options: .init(
-        params: .init(config: [
-            .init(
-                service: "llm",
-                options: [
-                    .init(name: "api_key", value: .string(""))
-                ]
-            )
-        ])
-    )
+let options: RTVIClientOptions = .init(
+    params: .init(config: [
+        .init(
+            service: "llm",
+            options: [
+                .init(name: "api_key", value: .string("<your Gemini api key>")),
+                .init(name: "initial_messages", value: .array([
+                    .object([
+                        "role": .string("user"),
+                        "content": .string("I need your help planning my next vacation.")
+                    ])
+                ])),
+                .init(name: "generation_config", value: .object([
+                    "speech_config": .object([
+                        "voice_config": .object([
+                            "prebuilt_voice_config": .object([
+                                "voice_name": .string("Puck") // "Puck" | "Charon" | "Kore" | "Fenrir" | "Aoede"
+                            ])
+                        ])
+                    ])
+                ]))
+            ]
+        )
+    ])
 )
+
+let client = GeminiLiveWebSocketVoiceClient(options: options)
+
 try await client.start()
 ```
 
