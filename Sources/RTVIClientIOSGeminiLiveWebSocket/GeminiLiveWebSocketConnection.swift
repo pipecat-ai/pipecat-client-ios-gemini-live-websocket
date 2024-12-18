@@ -6,6 +6,7 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
     
     struct Options {
         let apiKey: String
+        let initialMessages: [WebSocketMessages.Outbound.TextInput]
     }
     
     protocol Delegate: AnyObject {
@@ -51,15 +52,11 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
         )
         try Task.checkCancellation()
         
-        // TODO: remove after testing
-        // Send initial text input
-        let initialText = "Hi, who are you?"
-        try await sendMessage(
-            message: WebSocketMessages.Outbound.TextInput(
-                text: initialText
-            )
-        )
-        try Task.checkCancellation()
+        // Send initial context messages
+        for message in options.initialMessages {
+            try await sendMessage(message: message)
+            try Task.checkCancellation()
+        }
         
         // Listen for server messages
         Task {

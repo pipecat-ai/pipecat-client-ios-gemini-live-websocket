@@ -59,7 +59,7 @@ enum WebSocketMessages {
                 var turnComplete = true
                 
                 struct Turn: Encodable {
-                    var role = "USER"
+                    var role: String
                     var parts: [Text]
                     
                     struct Text: Encodable {
@@ -68,10 +68,10 @@ enum WebSocketMessages {
                 }
             }
             
-            init(text: String) {
+            init(text: String, role: String) {
                 self.clientContent = .init(
                     turns: [
-                        .init(parts: [.init(text: text)])
+                        .init(role: role == "user" ? "USER" : "SYSTEM", parts: [.init(text: text)])
                     ]
                 )
             }

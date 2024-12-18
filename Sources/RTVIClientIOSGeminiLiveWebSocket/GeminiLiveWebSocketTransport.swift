@@ -2,29 +2,6 @@ import Foundation
 import RTVIClientIOS
 import Daily
 
-extension RTVIClientOptions {
-    var webSocketConnectionOptions: GeminiLiveWebSocketConnection.Options {
-        var apiKey: String?
-        let config = config ?? params.config
-        for configItem in config {
-            if apiKey != nil {
-                break
-            }
-            if configItem.service == "llm" {
-                for option in configItem.options {
-                    if option.name == "api_key" {
-                        if case let .string(key) = option.value {
-                            apiKey = key
-                            break
-                        }
-                    }
-                }
-            }
-        }
-        return .init(apiKey: apiKey ?? "")
-    }
-}
-
 /// An RTVI transport to connect with the Gemini Live WebSocket backend.
 public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnection.Delegate {
     
