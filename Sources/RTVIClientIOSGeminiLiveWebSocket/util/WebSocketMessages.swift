@@ -1,6 +1,7 @@
 // MARK: - Inbound
 
 import Foundation
+import RTVIClientIOS
 
 // enums just for namespacing
 enum WebSocketMessages {
@@ -44,10 +45,11 @@ enum WebSocketMessages {
             
             struct Setup: Encodable {
                 var model: String
+                var generationConfig: Value?
             }
             
-            init(model: String) {
-                self.setup = .init(model: model)
+            init(model: String, generationConfig: Value?) {
+                self.setup = .init(model: model, generationConfig: generationConfig)
             }
         }
 

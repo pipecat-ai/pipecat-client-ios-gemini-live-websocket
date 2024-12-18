@@ -5,7 +5,8 @@ extension RTVIClientOptions {
         let config = config ?? params.config
         return .init(
             apiKey: config.apiKey ?? "",
-            initialMessages: config.initialMessages
+            initialMessages: config.initialMessages,
+            generationConfig: config.generationConfig
         )
     }
 }
@@ -36,6 +37,10 @@ private extension [ServiceConfig] {
             }
         }
         return messages
+    }
+    
+    var generationConfig: Value? {
+        llmConfig?.options.first { $0.name == "generation_config" }?.value
     }
     
     private var llmConfig: ServiceConfig? {

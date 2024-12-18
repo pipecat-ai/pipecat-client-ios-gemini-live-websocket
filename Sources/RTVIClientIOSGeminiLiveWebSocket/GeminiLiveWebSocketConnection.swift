@@ -1,4 +1,5 @@
 import Foundation
+import RTVIClientIOS
 
 class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
     
@@ -7,6 +8,7 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
     struct Options {
         let apiKey: String
         let initialMessages: [WebSocketMessages.Outbound.TextInput]
+        let generationConfig: Value?
     }
     
     protocol Delegate: AnyObject {
@@ -44,10 +46,11 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
         socket.resume()
         
         // Send initial setup message
-        let model = "models/gemini-2.0-flash-exp"
+        let model = "models/gemini-2.0-flash-exp" // TODO: make this configurable at some point
         try await sendMessage(
             message: WebSocketMessages.Outbound.Setup(
-                model: model
+                model: model,
+                generationConfig: options.generationConfig
             )
         )
         try Task.checkCancellation()
