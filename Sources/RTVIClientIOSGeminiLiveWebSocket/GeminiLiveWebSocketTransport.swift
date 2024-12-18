@@ -126,15 +126,22 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
             let messagesArgument = data.arguments?.first { $0.name == "messages" }
             if let messages = messagesArgument?.value.toMessagesArray() {
                 Task {
+                    // Send messages to LLM
                     for message in messages {
                         try await connection.sendMessage(message: message)
                     }
-                    // TODO: send faked "response" from server back to client to complete the action
+                    // Synthesize (i.e. fake) an RTVI-style action response from the server
+                    let id = message.id
+                    onMessage?(.init(
+                        type: RTVIMessageInbound.MessageType.ACTION_RESPONSE,
+                        data: String(data: try JSONEncoder().encode(ActionResponse.init(result: .boolean(true))), encoding: .utf8),
+                        id: message.id
+                    ))
                     // TODO: check whether system messages are supported, and whether multiple messages can be enqueued at once
                 }
             }
         } else {
-            logOperationNotSupported("\(#function), except for append_to_messages actions")
+            logOperationNotSupported("\(#function) (except for append_to_messages actions)")
         }
     }
     
