@@ -103,6 +103,23 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
         )
     }
     
+    func sendMessage(message: Encodable) async throws {
+        let encoder = JSONEncoder()
+        
+        // TODO: remove after testing
+        let messageString = try! String(
+            data: encoder.encode(message),
+            encoding: .utf8
+        )!
+        print("[pk] sending message: \(messageString)")
+        
+        try await socket?.send(
+            .string(
+                String(data: encoder.encode(message), encoding: .utf8)!
+            )
+        )
+    }
+    
     func urlSession(
         _ session: URLSession,
         webSocketTask: URLSessionWebSocketTask,
@@ -124,21 +141,4 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
     
     private let options: GeminiLiveWebSocketConnection.Options
     private var socket: URLSessionWebSocketTask?
-    
-    private func sendMessage(message: Encodable) async throws {
-        let encoder = JSONEncoder()
-        
-        // TODO: remove after testing
-        let messageString = try! String(
-            data: encoder.encode(message),
-            encoding: .utf8
-        )!
-        print("[pk] sending message: \(messageString)")
-        
-        try await socket?.send(
-            .string(
-                String(data: encoder.encode(message), encoding: .utf8)!
-            )
-        )
-    }
 }
