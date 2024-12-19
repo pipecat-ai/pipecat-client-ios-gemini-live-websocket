@@ -67,42 +67,52 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
         // Listen for server messages
         Task {
             while true {
-                let decoder = JSONDecoder()
-                
-                let message = try await socket.receive()
-                try Task.checkCancellation()
-                
-                switch message {
-                case .data(let data):
-                    // TODO: remove after testing
-                    print("[pk] received server message: \(String(data: data, encoding: .utf8))")
+                // TODO: remove
+                do {
+                    let decoder = JSONDecoder()
                     
-                    // Check for setup complete message
-                    let setupCompleteMessage = try? decoder.decode(
-                        WebSocketMessages.Inbound.SetupComplete.self,
-                        from: data
-                    )
-                    if let setupCompleteMessage {
-                        delegate?.connectionDidFinishModelSetup(self)
+                    let message = try await socket.receive()
+                    try Task.checkCancellation()
+                    
+                    switch message {
+                    case .data(let data):
+                        // TODO: remove after testing
+                        print("[pk] received server message: \(String(data: data, encoding: .utf8))")
+                        
+                        // Check for setup complete message
+                        let setupCompleteMessage = try? decoder.decode(
+                            WebSocketMessages.Inbound.SetupComplete.self,
+                            from: data
+                        )
+                        if let setupCompleteMessage {
+                            delegate?.connectionDidFinishModelSetup(self)
+                            continue
+                        }
+                        
+                        // Check for audio output message
+                        let serverMessage = try? decoder.decode(
+                            WebSocketMessages.Inbound.AudioOutput.self,
+                            from: data
+                        )
+                        if let serverMessage, let audioBytes = serverMessage.audioBytes() {
+                            delegate?.connection(
+                                self,
+                                didReceiveModelAudioBytes: audioBytes
+                            )
+                        }
+                        continue
+                    case .string(let string):
+                        // TODO: better logging
+                        print("[pk] received server message of unexpected type: \(string)")
                         continue
                     }
-                    
-                    // Check for audio output message
-                    let serverMessage = try? decoder.decode(
-                        WebSocketMessages.Inbound.AudioOutput.self,
-                        from: data
-                    )
-                    if let serverMessage, let audioBytes = serverMessage.audioBytes() {
-                        delegate?.connection(
-                            self,
-                            didReceiveModelAudioBytes: audioBytes
-                        )
+                } catch {
+                    // Socket is known to be closed (set to nil), so break out of the socket receive loop
+                    if self.socket == nil {
+                        break
                     }
-                    continue
-                case .string(let string):
-                    // TODO: better logging
-                    print("[pk] received server message of unexpected type: \(string)")
-                    continue
+                    // Otherwise wait a smidge and loop again
+                    try? await Task.sleep(nanoseconds: 250_000_000)
                 }
             }
         }
@@ -132,6 +142,11 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
         )
     }
     
+    func disconnect() {
+        // This will trigger urlSession(_:webSocketTask:didCloseWith:reason:), where we will nil out socket and thus cause the socket receive loop to end
+        socket?.cancel(with: .normalClosure, reason: nil)
+    }
+    
     func urlSession(
         _ session: URLSession,
         webSocketTask: URLSessionWebSocketTask,
@@ -147,6 +162,7 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
         reason: Data?
     ) {
         print("[pk] web socket closed! close code \(closeCode)")
+        socket = nil
     }
     
     // MARK: - Private

@@ -82,7 +82,10 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
     
     public func disconnect() async throws {
         // stop websocket connection
-        // TODO: later
+        connection.disconnect()
+        
+        // stop audio input
+        // TODO: later. do we need to set mic to muted or something? no, we probably should keep mic as showing "on"...right? check Daily implementation.
         
         // stop audio player
         // TODO: later
