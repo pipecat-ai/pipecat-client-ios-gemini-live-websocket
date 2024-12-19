@@ -25,7 +25,6 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
         // If this happens *before* we've entered the connected state, first pass through that state
         if _state == .connecting {
             self.setState(state: .connected)
-            self.delegate?.onConnected()
         }
         
         // Synthesize (i.e. fake) an RTVI-style "bot ready" response from the server
@@ -80,7 +79,6 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
         // (unless we've already leaped ahead to the ready state - see connectionDidFinishModelSetup())
         if _state == .connecting {
             self.setState(state: .connected)
-            self.delegate?.onConnected()
         }
     }
     
@@ -96,7 +94,6 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
         audioPlayer.stop()
         
         setState(state: .disconnected)
-        delegate?.onDisconnected()
     }
     
     public func getAllMics() -> [RTVIClientIOS.MediaDeviceInfo] {
@@ -183,10 +180,29 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
     }
     
     public func setState(state: RTVIClientIOS.TransportState) {
+        let previousState = self._state
+        
         self._state = state
         // TODO: remove when done debugging (actually maybe already not necessary)
         print("[pk] new state: \(state)")
         self.delegate?.onTransportStateChanged(state: self._state)
+        
+        // Fire delegate methods as needed
+        if state != previousState {
+            if state == .connected {
+                self.delegate?.onConnected()
+                self.delegate?.onBotConnected(
+                    participant: .init(
+                        id: ParticipantId(id: UUID().uuidString),
+                        name: "Gemini Multimodal Live",
+                        local: false
+                    )
+                )
+            }
+            if state == .disconnected {
+                self.delegate?.onDisconnected()
+            }
+        }
     }
     
     public func isConnected() -> Bool {
