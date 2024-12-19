@@ -3,7 +3,7 @@ import RTVIClientIOS
 import OSLog
 
 /// An RTVI transport to connect with the Gemini Live WebSocket backend.
-public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnection.Delegate {
+public class GeminiLiveWebSocketTransport: Transport {
     
     // MARK: - Public
     
@@ -17,30 +17,8 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
         self.options = options
         connection = GeminiLiveWebSocketConnection(options: options.webSocketConnectionOptions)
         connection.delegate = self
+        audioPlayer.delegate = self
         logUnsupportedOptions()
-    }
-    
-    func connectionDidFinishModelSetup(_: GeminiLiveWebSocketConnection) {
-        // If this happens *before* we've entered the connected state, first pass through that state
-        if _state == .connecting {
-            self.setState(state: .connected)
-        }
-        
-        // Synthesize (i.e. fake) an RTVI-style "bot ready" response from the server
-        // TODO: can we do better with this BotReadyData?
-        let botReadyData = BotReadyData(version: "n/a", config: [])
-        onMessage?(.init(
-            type: RTVIMessageInbound.MessageType.BOT_READY,
-            data: String(data: try! JSONEncoder().encode(botReadyData), encoding: .utf8),
-            id: String(UUID().uuidString.prefix(8))
-        ))
-    }
-    
-    func connection(
-        _: GeminiLiveWebSocketConnection,
-        didReceiveModelAudioBytes audioBytes: Data
-    ) {
-        audioPlayer.enqueueBytes(audioBytes)
     }
     
     public func initDevices() async throws {
@@ -279,5 +257,45 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
     private func logOperationNotSupported(_ operationName: String) {
         Logger.shared.warn("\(operationName) not supported")
     }
+}
+
+// MARK: - GeminiLiveWebSocketConnection.Delegate
+
+extension GeminiLiveWebSocketTransport: GeminiLiveWebSocketConnection.Delegate {
+    func connectionDidFinishModelSetup(_: GeminiLiveWebSocketConnection) {
+        // If this happens *before* we've entered the connected state, first pass through that state
+        if _state == .connecting {
+            self.setState(state: .connected)
+        }
+        
+        // Synthesize (i.e. fake) an RTVI-style "bot ready" response from the server
+        // TODO: can we do better with this BotReadyData?
+        let botReadyData = BotReadyData(version: "n/a", config: [])
+        onMessage?(.init(
+            type: RTVIMessageInbound.MessageType.BOT_READY,
+            data: String(data: try! JSONEncoder().encode(botReadyData), encoding: .utf8),
+            id: String(UUID().uuidString.prefix(8))
+        ))
+    }
+    
+    func connection(
+        _: GeminiLiveWebSocketConnection,
+        didReceiveModelAudioBytes audioBytes: Data
+    ) {
+        audioPlayer.enqueueBytes(audioBytes)
+    }
+}
+
+// MARK: - AudioPlayer.Delegate
+
+extension GeminiLiveWebSocketTransport: AudioPlayer.Delegate {
+    func audioPlayerDidStartPlayback(_ audioPlayer: AudioPlayer) {
+        delegate?.onBotStartedSpeaking(participant: connectedBotParticipant)
+    }
+    
+    func audioPlayerDidFinishPlayback(_ audioPlayer: AudioPlayer) {
+        delegate?.onBotStoppedSpeaking(participant: connectedBotParticipant)
+    }
+    
 }
 

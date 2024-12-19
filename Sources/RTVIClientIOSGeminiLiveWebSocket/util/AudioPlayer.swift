@@ -4,6 +4,13 @@ class AudioPlayer {
     
     // MARK: - Public
     
+    protocol Delegate: AnyObject {
+        func audioPlayerDidStartPlayback(_ audioPlayer: AudioPlayer)
+        func audioPlayerDidFinishPlayback(_ audioPlayer: AudioPlayer)
+    }
+    
+    public weak var delegate: Delegate? = nil
+    
     init() {
         // TODO: error handling when creating all these?
         audioEngine = AVAudioEngine()
@@ -46,6 +53,7 @@ class AudioPlayer {
     
     func stop() {
         playerNode.stop()
+        enqueuedBufferCount = 0
         audioEngine.stop()
     }
     
@@ -135,7 +143,12 @@ class AudioPlayer {
         
         // Schedule it for playing
         print("[pk] scheduling buffer to play. frames: \(playerBuffer.frameLength)")
-        playerNode.scheduleBuffer(playerBuffer)
+        playerNode.scheduleBuffer(playerBuffer, completionCallbackType: .dataPlayedBack) { [weak self] callbackType in
+            if callbackType == .dataPlayedBack {
+                self?.decrementEnqueuedBufferCount()
+            }
+        }
+        incrementEnqueuedBufferCount()
     }
     
     // MARK: - Private
@@ -146,4 +159,20 @@ class AudioPlayer {
     private let inputAudioFormat: AVAudioFormat
     private let playerAudioFormat: AVAudioFormat
     private let inputToPlayerAudioConverter: AVAudioConverter
+    private var enqueuedBufferCount = 0
+    
+    func incrementEnqueuedBufferCount() {
+        enqueuedBufferCount += 1
+        if enqueuedBufferCount == 1 {
+            delegate?.audioPlayerDidStartPlayback(self)
+        }
+    }
+    
+    func decrementEnqueuedBufferCount() {
+        guard enqueuedBufferCount > 0 else { return }
+        enqueuedBufferCount -= 1
+        if enqueuedBufferCount == 0 {
+            delegate?.audioPlayerDidFinishPlayback(self)
+        }
+    }
 }
