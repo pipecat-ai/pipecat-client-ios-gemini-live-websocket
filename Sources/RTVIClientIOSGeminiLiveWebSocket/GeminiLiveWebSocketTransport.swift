@@ -20,11 +20,27 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
         connection.delegate = self
     }
     
+    func connectionDidFinishModelSetup(_: GeminiLiveWebSocketConnection) {
+        // If this happens *before* we've entered the connected state, first pass through that state
+        if _state == .connecting {
+            self.setState(state: .connected)
+            self.delegate?.onConnected()
+        }
+        
+        // Synthesize (i.e. fake) an RTVI-style "bot ready" response from the server
+        // TODO: can we do better with this BotReadyData?
+        let botReadyData = BotReadyData(version: "n/a", config: [])
+        onMessage?(.init(
+            type: RTVIMessageInbound.MessageType.BOT_READY,
+            data: String(data: try! JSONEncoder().encode(botReadyData), encoding: .utf8),
+            id: String(UUID().uuidString.prefix(8))
+        ))
+    }
+    
     func connection(
         _: GeminiLiveWebSocketConnection,
         didReceiveModelAudioBytes audioBytes: Data
     ) {
-        print("[pk] received model audio! (length: \(audioBytes.count))")
         audioPlayer.enqueueBytes(audioBytes)
     }
     
@@ -56,8 +72,12 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
             try audioRecorder.resume()
         }
         
-        self.setState(state: .connected)
-        self.delegate?.onConnected()
+        // go to connected state
+        // (unless we've already leaped ahead to the ready state - see connectionDidFinishModelSetup())
+        if _state == .connecting {
+            self.setState(state: .connected)
+            self.delegate?.onConnected()
+        }
     }
     
     public func disconnect() async throws {
@@ -141,7 +161,11 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
                 }
             }
         } else {
-            logOperationNotSupported("\(#function) (except for append_to_messages actions)")
+            if message.type == RTVIMessageOutbound.MessageType.ACTION {
+                logOperationNotSupported("\(#function) of type 'action' (except for append_to_messages)")
+            } else {
+                logOperationNotSupported("\(#function) of type '\(message.type)'")
+            }
         }
     }
     

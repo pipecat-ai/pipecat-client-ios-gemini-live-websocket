@@ -12,6 +12,9 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
     }
     
     protocol Delegate: AnyObject {
+        func connectionDidFinishModelSetup(
+            _: GeminiLiveWebSocketConnection
+        )
         func connection(
             _: GeminiLiveWebSocketConnection,
             didReceiveModelAudioBytes audioBytes: Data
@@ -73,20 +76,29 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
                 case .data(let data):
                     // TODO: remove after testing
                     print("[pk] received server message: \(String(data: data, encoding: .utf8))")
-                    do {
-                        let serverMessage = try decoder.decode(
-                            WebSocketMessages.Inbound.AudioOutput.self,
-                            from: data
-                        )
-                        if let audioBytes = serverMessage.audioBytes() {
-                            delegate?.connection(
-                                self,
-                                didReceiveModelAudioBytes: audioBytes
-                            )
-                        }
-                    } catch {
+                    
+                    // Check for setup complete message
+                    let setupCompleteMessage = try? decoder.decode(
+                        WebSocketMessages.Inbound.SetupComplete.self,
+                        from: data
+                    )
+                    if let setupCompleteMessage {
+                        delegate?.connectionDidFinishModelSetup(self)
                         continue
                     }
+                    
+                    // Check for audio output message
+                    let serverMessage = try? decoder.decode(
+                        WebSocketMessages.Inbound.AudioOutput.self,
+                        from: data
+                    )
+                    if let serverMessage, let audioBytes = serverMessage.audioBytes() {
+                        delegate?.connection(
+                            self,
+                            didReceiveModelAudioBytes: audioBytes
+                        )
+                    }
+                    continue
                 case .string(let string):
                     // TODO: better logging
                     print("[pk] received server message of unexpected type: \(string)")

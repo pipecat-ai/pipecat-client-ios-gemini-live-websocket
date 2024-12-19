@@ -9,6 +9,12 @@ enum WebSocketMessages {
     // MARK: - Inbound
     
     enum Inbound {
+        struct SetupComplete: Decodable {
+            var setupComplete: EmptyObject
+            
+            struct EmptyObject: Decodable {}
+        }
+        
         struct AudioOutput: Decodable {
             var serverContent: ServerContent
             
