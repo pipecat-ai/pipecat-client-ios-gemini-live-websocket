@@ -56,6 +56,9 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
     public func release() {
         // stop audio input
         audioRecorder.stop()
+        
+        // stop audio player
+        audioPlayer.stop()
     }
     
     public func connect(authBundle: RTVIClientIOS.AuthBundle?) async throws {
@@ -85,10 +88,11 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
         connection.disconnect()
         
         // stop audio input
-        // TODO: later. do we need to set mic to muted or something? no, we probably should keep mic as showing "on"...right? check Daily implementation.
+        // (why not just pause it? to avoid problems in case the user forgets to call release() before instantiating a new voice client)
+        audioRecorder.stop()
         
         // stop audio player
-        // TODO: later
+        audioPlayer.stop()
         
         setState(state: .disconnected)
     }

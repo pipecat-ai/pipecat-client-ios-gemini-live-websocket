@@ -2,6 +2,8 @@ import AVFoundation
 
 class AudioPlayer {
     
+    // MARK: - Public
+    
     init() {
         // TODO: error handling when creating all these?
         audioEngine = AVAudioEngine()
@@ -15,8 +17,16 @@ class AudioPlayer {
     }
     
     func start() throws {
+        // If setup already happened, just start the player + engine
+        if didSetup {
+            try audioEngine.start()
+            try playerNode.play()
+            return
+        }
+        
         try AudioCommon.prepareAudioSession()
         
+        // Setup the audio engine for playback
         audioEngine.attach(playerNode)
         audioEngine.connect(
             playerNode,
@@ -26,8 +36,17 @@ class AudioPlayer {
             // so, this?
             format: playerAudioFormat
         )
+        
+        // Now start the engine
         try audioEngine.start()
         try playerNode.play()
+        
+        didSetup = true
+    }
+    
+    func stop() {
+        playerNode.stop()
+        audioEngine.stop()
     }
     
     // Copilot version
@@ -119,6 +138,9 @@ class AudioPlayer {
         playerNode.scheduleBuffer(playerBuffer)
     }
     
+    // MARK: - Private
+    
+    private var didSetup = false
     private let audioEngine: AVAudioEngine
     private let playerNode: AVAudioPlayerNode
     private let inputAudioFormat: AVAudioFormat
