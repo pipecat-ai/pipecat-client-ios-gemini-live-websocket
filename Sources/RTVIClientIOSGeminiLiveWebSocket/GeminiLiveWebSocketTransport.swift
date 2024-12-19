@@ -96,6 +96,7 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
         audioPlayer.stop()
         
         setState(state: .disconnected)
+        delegate?.onDisconnected()
     }
     
     public func getAllMics() -> [RTVIClientIOS.MediaDeviceInfo] {
