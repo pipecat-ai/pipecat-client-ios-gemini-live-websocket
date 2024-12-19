@@ -11,7 +11,7 @@ extension RTVIClientOptions {
     }
 }
 
-private extension [ServiceConfig] {
+extension [ServiceConfig] {
     var apiKey: String? {
         let apiKeyOption = llmConfig?.options.first { $0.name == "api_key" }
         if case let .string(apiKey) = apiKeyOption?.value {
@@ -29,7 +29,7 @@ private extension [ServiceConfig] {
         llmConfig?.options.first { $0.name == "generation_config" }?.value
     }
     
-    private var llmConfig: ServiceConfig? {
+    var llmConfig: ServiceConfig? {
         first { $0.service == "llm" }
     }
 }

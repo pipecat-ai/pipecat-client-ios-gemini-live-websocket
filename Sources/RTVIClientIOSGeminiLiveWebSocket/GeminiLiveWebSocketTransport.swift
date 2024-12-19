@@ -18,6 +18,7 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
         self.options = options
         connection = GeminiLiveWebSocketConnection(options: options.webSocketConnectionOptions)
         connection.delegate = self
+        logUnsupportedOptions()
     }
     
     func connectionDidFinishModelSetup(_: GeminiLiveWebSocketConnection) {
@@ -224,6 +225,31 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
                     // TODO: better error handling
                     print("[pk] send user audio failed: \(error.localizedDescription)")
                 }
+            }
+        }
+    }
+    
+    private func logUnsupportedOptions() {
+        if options.enableCam {
+            logOperationNotSupported("enableCam option")
+        }
+        if !options.services.isEmpty {
+            logOperationNotSupported("services option")
+        }
+        if options.customBodyParams != nil || options.params.requestData != nil {
+            logOperationNotSupported("params.requestData/customBodyParams option")
+        }
+        if options.customHeaders != nil || !options.params.headers.isEmpty {
+            logOperationNotSupported("params.headers/customBodyParams option")
+        }
+        let config = options.config ?? options.params.config
+        if config.contains { $0.service != "llm" } {
+            logOperationNotSupported("config for service other than 'llm'")
+        }
+        if let llmConfig = config.llmConfig {
+            let supportedLlmConfigOptions = ["api_key", "initial_messages", "generation_config"]
+            if llmConfig.options.contains { !supportedLlmConfigOptions.contains($0.name) } {
+                logOperationNotSupported("'llm' service config option other than \(supportedLlmConfigOptions.joined(separator: ", "))")
             }
         }
     }
