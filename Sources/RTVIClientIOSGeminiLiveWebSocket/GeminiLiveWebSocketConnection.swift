@@ -19,6 +19,7 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
             _: GeminiLiveWebSocketConnection,
             didReceiveModelAudioBytes audioBytes: Data
         )
+        func connectionDidDetectUserInterruption(_: GeminiLiveWebSocketConnection)
     }
     
     public weak var delegate: Delegate? = nil
@@ -77,7 +78,7 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
                     switch message {
                     case .data(let data):
                         // TODO: remove after testing
-                        print("[pk] received server message: \(String(data: data, encoding: .utf8))")
+                        print("[pk] received server message: \(String(data: data, encoding: .utf8)?.prefix(50))")
                         
                         // Check for setup complete message
                         let setupCompleteMessage = try? decoder.decode(
@@ -90,15 +91,25 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
                         }
                         
                         // Check for audio output message
-                        let serverMessage = try? decoder.decode(
+                        let audioOutputMessage = try? decoder.decode(
                             WebSocketMessages.Inbound.AudioOutput.self,
                             from: data
                         )
-                        if let serverMessage, let audioBytes = serverMessage.audioBytes() {
+                        if let audioOutputMessage, let audioBytes = audioOutputMessage.audioBytes() {
                             delegate?.connection(
                                 self,
                                 didReceiveModelAudioBytes: audioBytes
                             )
+                        }
+                        
+                        // Check for interrupted message
+                        let interruptedMessage = try? decoder.decode(
+                            WebSocketMessages.Inbound.Interrupted.self,
+                            from: data
+                        )
+                        if let interruptedMessage {
+                            delegate?.connectionDidDetectUserInterruption(self)
+                            continue
                         }
                         continue
                     case .string(let string):

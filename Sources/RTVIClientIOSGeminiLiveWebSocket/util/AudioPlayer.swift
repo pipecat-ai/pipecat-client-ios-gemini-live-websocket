@@ -57,6 +57,12 @@ class AudioPlayer {
         audioEngine.stop()
     }
     
+    func clearEnqueuedBytes() {
+        playerNode.stop()
+        enqueuedBufferCount = 0
+        playerNode.play()
+    }
+    
     // Copilot version
 //    func enqueueBytes(_ bytes: Data) {
 //        bytes.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in

@@ -284,6 +284,11 @@ extension GeminiLiveWebSocketTransport: GeminiLiveWebSocketConnection.Delegate {
     ) {
         audioPlayer.enqueueBytes(audioBytes)
     }
+    
+    func connectionDidDetectUserInterruption(_: GeminiLiveWebSocketConnection) {
+        audioPlayer.clearEnqueuedBytes()
+        delegate?.onUserStartedSpeaking()
+    }
 }
 
 // MARK: - AudioPlayer.Delegate

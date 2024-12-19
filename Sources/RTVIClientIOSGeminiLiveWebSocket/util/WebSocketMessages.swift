@@ -41,6 +41,14 @@ enum WebSocketMessages {
                 }
             }
         }
+        
+        struct Interrupted: Decodable {
+            var serverContent: ServerContent
+            
+            struct ServerContent: Decodable {
+                var interrupted = true
+            }
+        }
     }
     
     // MARK: - Outbound
