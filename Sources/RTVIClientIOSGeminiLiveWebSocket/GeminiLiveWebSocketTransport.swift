@@ -1,6 +1,5 @@
 import Foundation
 import RTVIClientIOS
-import Daily
 import OSLog
 
 /// An RTVI transport to connect with the Gemini Live WebSocket backend.
@@ -191,15 +190,16 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
         if state != previousState {
             if state == .connected {
                 self.delegate?.onConnected()
-                self.delegate?.onBotConnected(
-                    participant: .init(
-                        id: ParticipantId(id: UUID().uuidString),
-                        name: "Gemini Multimodal Live",
-                        local: false
-                    )
+                // New bot participant id each time we connect
+                connectedBotParticipant = Participant(
+                    id: ParticipantId(id: UUID().uuidString),
+                    name: connectedBotParticipant.name,
+                    local: connectedBotParticipant.local
                 )
+                self.delegate?.onBotConnected(participant: connectedBotParticipant)
             }
             if state == .disconnected {
+                self.delegate?.onBotDisconnected(participant: connectedBotParticipant)
                 self.delegate?.onDisconnected()
             }
         }
@@ -232,6 +232,11 @@ public class GeminiLiveWebSocketTransport: Transport, GeminiLiveWebSocketConnect
     private let connection: GeminiLiveWebSocketConnection
     private let audioPlayer = AudioPlayer()
     private let audioRecorder = AudioRecorder()
+    private var connectedBotParticipant = Participant(
+        id: ParticipantId(id: UUID().uuidString),
+        name: "Gemini Multimodal Live",
+        local: false
+    )
     
     private func wireUpAudioInput() {
         Task {
