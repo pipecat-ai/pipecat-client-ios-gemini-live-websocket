@@ -15,8 +15,6 @@ class AudioRecorder {
             return
         }
         
-        try AudioCommon.prepareAudioSession()
-        
         // Setup the audio engine for recording
         try audioEngine.inputNode.setVoiceProcessingEnabled(true) // important for ignoring output from the phone itself
         let inputNode = audioEngine.inputNode

@@ -18,16 +18,28 @@ public class GeminiLiveWebSocketTransport: Transport {
         connection = GeminiLiveWebSocketConnection(options: options.webSocketConnectionOptions)
         connection.delegate = self
         audioPlayer.delegate = self
+        audioManager.delegate = self
         logUnsupportedOptions()
     }
     
     public func initDevices() async throws {
+        if (self.devicesInitialized) {
+            // There is nothing to do in this case
+            return
+        }
+        
         self.setState(state: .initializing)
+        
+        // trigger the initial status
+        self.delegate?.onAvailableMicsUpdated(mics: self.getAllMics());
+        self._selectedMic = self.selectedMic()
+        self.delegate?.onMicUpdated(mic: self._selectedMic)
         
         // wire up audio input
         wireUpAudioInput()
         
         self.setState(state: .initialized)
+        self.devicesInitialized = true
     }
     
     public func release() {
@@ -40,6 +52,9 @@ public class GeminiLiveWebSocketTransport: Transport {
     
     public func connect(authBundle: RTVIClientIOS.AuthBundle?) async throws {
         self.setState(state: .connecting)
+        
+        // start managing audio device configuration
+        audioManager.startManaging()
         
         // start audio player
         try audioPlayer.start()
@@ -70,12 +85,14 @@ public class GeminiLiveWebSocketTransport: Transport {
         // stop audio player
         audioPlayer.stop()
         
+        // stop managing audio device configuration
+        audioManager.stopManaging()
+        
         setState(state: .disconnected)
     }
     
     public func getAllMics() -> [RTVIClientIOS.MediaDeviceInfo] {
-        // TODO: later
-        return []
+        audioManager.availableDevices.map { $0.toRtvi() }
     }
     
     public func getAllCams() -> [RTVIClientIOS.MediaDeviceInfo] {
@@ -84,7 +101,9 @@ public class GeminiLiveWebSocketTransport: Transport {
     }
     
     public func updateMic(micId: RTVIClientIOS.MediaDeviceId) async throws {
-        // TODO: later
+        audioManager.preferredAudioDevice = .init(deviceID: micId.id)
+        // Changing preferred audio device probably changed actual audio device in use
+        updateSelectedMicIfNeeded()
     }
     
     public func updateCam(camId: RTVIClientIOS.MediaDeviceId) async throws {
@@ -92,8 +111,7 @@ public class GeminiLiveWebSocketTransport: Transport {
     }
     
     public func selectedMic() -> RTVIClientIOS.MediaDeviceInfo? {
-        // TODO: later
-        return nil
+        audioManager.availableDevices.first { $0.deviceID == audioManager.audioDevice.deviceID }?.toRtvi()
     }
     
     public func selectedCam() -> RTVIClientIOS.MediaDeviceInfo? {
@@ -208,6 +226,7 @@ public class GeminiLiveWebSocketTransport: Transport {
     private let options: RTVIClientOptions
     private var _state: TransportState = .disconnected
     private let connection: GeminiLiveWebSocketConnection
+    private let audioManager = AudioManager()
     private let audioPlayer = AudioPlayer()
     private let audioRecorder = AudioRecorder()
     private var connectedBotParticipant = Participant(
@@ -215,6 +234,8 @@ public class GeminiLiveWebSocketTransport: Transport {
         name: "Gemini Multimodal Live",
         local: false
     )
+    private var devicesInitialized: Bool = false
+    private var _selectedMic: MediaDeviceInfo?
     
     private func wireUpAudioInput() {
         Task {
@@ -256,6 +277,14 @@ public class GeminiLiveWebSocketTransport: Transport {
     
     private func logOperationNotSupported(_ operationName: String) {
         Logger.shared.warn("\(operationName) not supported")
+    }
+    
+    private func updateSelectedMicIfNeeded() {
+        if self.selectedMic() == self._selectedMic {
+            return
+        }
+        self._selectedMic = self.selectedMic()
+        self.delegate?.onMicUpdated(mic: self._selectedMic)
     }
 }
 
@@ -304,3 +333,14 @@ extension GeminiLiveWebSocketTransport: AudioPlayer.Delegate {
     
 }
 
+// MARK: - AudioManagerDelegate
+
+extension GeminiLiveWebSocketTransport: AudioManagerDelegate {
+    func audioManagerDidChangeDevices(_ audioManager: AudioManager) {
+        // Available devices changed
+        delegate?.onAvailableMicsUpdated(mics: audioManager.availableDevices.map { $0.toRtvi() })
+        
+        // Current audio device *may* have also changed as side-effect of available devices changing
+        updateSelectedMicIfNeeded()
+    }
+}

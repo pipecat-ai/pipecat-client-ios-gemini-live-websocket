@@ -31,8 +31,6 @@ class AudioPlayer {
             return
         }
         
-        try AudioCommon.prepareAudioSession()
-        
         // Setup the audio engine for playback
         audioEngine.attach(playerNode)
         audioEngine.connect(
