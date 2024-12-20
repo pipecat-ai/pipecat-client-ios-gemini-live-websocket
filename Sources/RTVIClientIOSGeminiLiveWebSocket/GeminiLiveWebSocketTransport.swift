@@ -285,6 +285,16 @@ public class GeminiLiveWebSocketTransport: Transport {
         }
         self._selectedMic = self.selectedMic()
         self.delegate?.onMicUpdated(mic: self._selectedMic)
+        do {
+            try audioPlayer.adaptToDeviceChange()
+        } catch {
+            Logger.shared.error("Audio player failed to adapt to device change")
+        }
+        do {
+            try audioRecorder.adaptToDeviceChange()
+        } catch {
+            Logger.shared.error("Audio recorder failed to adapt to device change")
+        }
     }
 }
 

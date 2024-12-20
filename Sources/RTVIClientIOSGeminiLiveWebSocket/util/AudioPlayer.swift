@@ -55,6 +55,16 @@ class AudioPlayer {
         audioEngine.stop()
     }
     
+    // TODO: maybe someday be smarter so changing devices doesn't cut off current output
+    func adaptToDeviceChange() throws {
+        if !didSetup { return }
+        stop()
+        audioEngine = AVAudioEngine()
+        playerNode = AVAudioPlayerNode()
+        didSetup = false
+        try start()
+    }
+    
     func clearEnqueuedBytes() {
         playerNode.stop()
         enqueuedBufferCount = 0
@@ -158,8 +168,8 @@ class AudioPlayer {
     // MARK: - Private
     
     private var didSetup = false
-    private let audioEngine: AVAudioEngine
-    private let playerNode: AVAudioPlayerNode
+    private var audioEngine: AVAudioEngine
+    private var playerNode: AVAudioPlayerNode
     private let inputAudioFormat: AVAudioFormat
     private let playerAudioFormat: AVAudioFormat
     private let inputToPlayerAudioConverter: AVAudioConverter
