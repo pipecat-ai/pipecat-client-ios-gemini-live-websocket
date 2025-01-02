@@ -18,7 +18,9 @@ class AudioRecorder {
         // Setup the audio engine for recording
         try audioEngine.inputNode.setVoiceProcessingEnabled(true) // important for ignoring output from the phone itself
         let inputNode = audioEngine.inputNode
-        let inputFormat = inputNode.outputFormat(forBus: 0)
+        // Hmm, we really *should* be using inputNode.outputFormat, but for some reason after disconnecting then the voice cclient outputFormat reports 0hz sample rate, even though it *does* work (installing the tap works).
+        // Some post suggests using the input format instead of the output one? https://stackoverflow.com/a/47902479
+        let inputFormat = inputNode.inputFormat(forBus: 0)
         let formatConverter = AVAudioConverter(
             from: inputFormat,
             to: AudioCommon.format
@@ -86,8 +88,8 @@ class AudioRecorder {
     private var streamAudioContinuation: AsyncStream<Data>.Continuation?
     
     func stop(andEndStream endStream: Bool) {
+        audioEngine.inputNode.removeTap(onBus: 0)
         audioEngine.stop()
-//        audioEngine.inputNode.removeTap(onBus: 0) // TODO: needed?
         if endStream {
             streamAudioContinuation?.finish()
         }
