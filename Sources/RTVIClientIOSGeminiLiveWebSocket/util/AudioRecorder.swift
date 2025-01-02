@@ -62,8 +62,12 @@ class AudioRecorder {
         audioEngine.pause()
     }
     
-    func stop() {
-        stop(andEndStream: true)
+    func stop(andTerminateStream endStream: Bool) {
+        audioEngine.inputNode.removeTap(onBus: 0)
+        audioEngine.stop()
+        if endStream {
+            streamAudioContinuation?.finish()
+        }
     }
     
     func streamAudio() -> AsyncStream<Data> {
@@ -74,7 +78,7 @@ class AudioRecorder {
     
     func adaptToDeviceChange() throws {
         if !didSetup { return }
-        stop(andEndStream: false)
+        stop(andTerminateStream: false)
         audioEngine = AVAudioEngine()
         didSetup = false
         try resume()
@@ -86,14 +90,6 @@ class AudioRecorder {
     private var audioEngine = AVAudioEngine()
     private let audioQueue = DispatchQueue(label: "com.pipecat.GeminiLiveWebSocketTransport.AudioRecorder")
     private var streamAudioContinuation: AsyncStream<Data>.Continuation?
-    
-    func stop(andEndStream endStream: Bool) {
-        audioEngine.inputNode.removeTap(onBus: 0)
-        audioEngine.stop()
-        if endStream {
-            streamAudioContinuation?.finish()
-        }
-    }
     
     private static func convertToTargetFormat(
         inputBuffer: AVAudioPCMBuffer,

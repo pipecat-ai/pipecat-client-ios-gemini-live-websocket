@@ -35,8 +35,8 @@ public class GeminiLiveWebSocketTransport: Transport {
         self._selectedMic = self.selectedMic()
         self.delegate?.onMicUpdated(mic: self._selectedMic)
         
-        // wire up audio input
-        wireUpAudioInput()
+        // hook up audio input
+        hookUpAudioInputStream()
         
         self.setState(state: .initialized)
         self.devicesInitialized = true
@@ -44,7 +44,7 @@ public class GeminiLiveWebSocketTransport: Transport {
     
     public func release() {
         // stop audio input
-        audioRecorder.stop()
+        audioRecorder.stop(andTerminateStream: true)
         
         // stop audio player
         audioPlayer.stop()
@@ -87,7 +87,7 @@ public class GeminiLiveWebSocketTransport: Transport {
         
         // stop audio input
         // (why not just pause it? to avoid problems in case the user forgets to call release() before instantiating a new voice client)
-        audioRecorder.stop()
+        audioRecorder.stop(andTerminateStream: false)
         
         // stop audio player
         audioPlayer.stop()
@@ -250,7 +250,7 @@ public class GeminiLiveWebSocketTransport: Transport {
     private var localAudioTrackID: MediaTrackId?
     private var botAudioTrackID: MediaTrackId?
     
-    private func wireUpAudioInput() {
+    private func hookUpAudioInputStream() {
         Task {
             for await audio in audioRecorder.streamAudio() {
                 do {
