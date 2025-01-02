@@ -87,7 +87,7 @@ enum WebSocketMessages {
             init(text: String, role: String) {
                 self.clientContent = .init(
                     turns: [
-                        .init(role: role == "user" ? "USER" : "SYSTEM", parts: [.init(text: text)])
+                        .init(role: role == "user" ? "user" : "model", parts: [.init(text: text)])
                     ]
                 )
             }
