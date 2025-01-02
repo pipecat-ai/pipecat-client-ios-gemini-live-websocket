@@ -27,7 +27,7 @@ class AudioRecorder {
         )!
         audioEngine.inputNode.installTap(
             onBus: 0,
-            // 1 second buffer. TODO: is this a reasonable value?
+            // 1 second buffer
             bufferSize: UInt32(AudioCommon.format.sampleRate),
             format: inputFormat
         ) { inputBuffer, time in

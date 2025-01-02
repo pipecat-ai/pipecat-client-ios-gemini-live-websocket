@@ -50,7 +50,7 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
         socket.resume()
         
         // Send initial setup message
-        let model = "models/gemini-2.0-flash-exp" // TODO: make this configurable at some point
+        let model = "models/gemini-2.0-flash-exp" // TODO: make this configurable someday
         try await sendMessage(
             message: WebSocketMessages.Outbound.Setup(
                 model: model,
@@ -68,7 +68,6 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
         // Listen for server messages
         Task {
             while true {
-                // TODO: remove
                 do {
                     let decoder = JSONDecoder()
                     
@@ -77,8 +76,7 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
                     
                     switch message {
                     case .data(let data):
-                        // TODO: remove after testing
-                        print("[pk] received server message: \(String(data: data, encoding: .utf8)?.prefix(50))")
+//                        print("received server message: \(String(data: data, encoding: .utf8)?.prefix(50))")
                         
                         // Check for setup complete message
                         let setupCompleteMessage = try? decoder.decode(
@@ -113,8 +111,7 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
                         }
                         continue
                     case .string(let string):
-                        // TODO: better logging
-                        print("[pk] received server message of unexpected type: \(string)")
+                        Logger.shared.warn("received server message of unexpected type: \(string)")
                         continue
                     }
                 } catch {
@@ -145,18 +142,12 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
     func sendMessage(message: Encodable) async throws {
         let encoder = JSONEncoder()
         
-        // TODO: remove after testing
         let messageString = try! String(
             data: encoder.encode(message),
             encoding: .utf8
         )!
-        print("[pk] sending message: \(messageString)")
-        
-        try await socket?.send(
-            .string(
-                String(data: encoder.encode(message), encoding: .utf8)!
-            )
-        )
+        print("sending message: \(messageString.prefix(50))")
+        try await socket?.send(.string(messageString))
     }
     
     func disconnect() {

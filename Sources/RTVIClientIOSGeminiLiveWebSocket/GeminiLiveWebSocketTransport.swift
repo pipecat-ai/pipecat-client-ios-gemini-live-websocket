@@ -155,10 +155,8 @@ public class GeminiLiveWebSocketTransport: Transport {
     
     public func sendMessage(message: RTVIClientIOS.RTVIMessageOutbound) throws {
         if let data = message.decodeActionData(), data.service == "llm" && data.action == "append_to_messages" {
-            // TODO: remove log
-            print("append_to_messages detected!")
             let messagesArgument = data.arguments?.first { $0.name == "messages" }
-            if let messages = messagesArgument?.value.toMessagesArray() {
+            if let messages = messagesArgument?.value.toTextInputWebSocketMessagesArray() {
                 Task {
                     // Send messages to LLM
                     for message in messages {
@@ -171,7 +169,6 @@ public class GeminiLiveWebSocketTransport: Transport {
                         data: String(data: try JSONEncoder().encode(ActionResponse.init(result: .boolean(true))), encoding: .utf8),
                         id: message.id
                     ))
-                    // TODO: check whether system messages are supported, and whether multiple messages can be enqueued at once
                 }
             }
         } else {
@@ -191,8 +188,6 @@ public class GeminiLiveWebSocketTransport: Transport {
         let previousState = self._state
         
         self._state = state
-        // TODO: remove when done debugging (actually maybe already not necessary)
-        print("[pk] new state: \(state)")
         self.delegate?.onTransportStateChanged(state: self._state)
         
         // Fire delegate methods as needed
@@ -232,7 +227,6 @@ public class GeminiLiveWebSocketTransport: Transport {
     }
     
     public func expiry() -> Int? {
-        // TODO: later
         return nil
     }
     
@@ -262,8 +256,7 @@ public class GeminiLiveWebSocketTransport: Transport {
                 do {
                     try await connection.sendUserAudio(audio)
                 } catch {
-                    // TODO: better error handling
-                    print("[pk] send user audio failed: \(error.localizedDescription)")
+                    Logger.shared.warn("send user audio failed: \(error.localizedDescription)")
                 }
             }
         }
@@ -338,7 +331,7 @@ extension GeminiLiveWebSocketTransport: GeminiLiveWebSocketConnection.Delegate {
         }
         
         // Synthesize (i.e. fake) an RTVI-style "bot ready" response from the server
-        // TODO: can we do better with this BotReadyData?
+        // TODO: can we fill in more meaningful BotReadyData someday?
         let botReadyData = BotReadyData(version: "n/a", config: [])
         onMessage?(.init(
             type: RTVIMessageInbound.MessageType.BOT_READY,

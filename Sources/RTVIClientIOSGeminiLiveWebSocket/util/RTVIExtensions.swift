@@ -22,7 +22,7 @@ extension [ServiceConfig] {
     
     var initialMessages: [WebSocketMessages.Outbound.TextInput] {
         let initialMessagesKeyOption = llmConfig?.options.first { $0.name == "initial_messages" }
-        return initialMessagesKeyOption?.value.toMessagesArray() ?? []
+        return initialMessagesKeyOption?.value.toTextInputWebSocketMessagesArray() ?? []
     }
     
     var generationConfig: Value? {
@@ -36,7 +36,7 @@ extension [ServiceConfig] {
 
 extension Value {
     // Tries to parse this options Value as an array of LLM messages, converted to WebSocketMessages.Outbound.TextInput
-    func toMessagesArray() -> [WebSocketMessages.Outbound.TextInput] {
+    func toTextInputWebSocketMessagesArray() -> [WebSocketMessages.Outbound.TextInput] {
         var messages: [WebSocketMessages.Outbound.TextInput] = []
         if case let .array(messageValues) = self {
             for messageValue in messageValues {

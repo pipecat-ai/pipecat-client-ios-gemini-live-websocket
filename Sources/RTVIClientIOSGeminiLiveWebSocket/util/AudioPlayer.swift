@@ -12,7 +12,6 @@ class AudioPlayer {
     public weak var delegate: Delegate? = nil
     
     init() {
-        // TODO: error handling when creating all these?
         audioEngine = AVAudioEngine()
         playerNode = AVAudioPlayerNode()
         inputAudioFormat = AudioCommon.format
@@ -90,7 +89,6 @@ class AudioPlayer {
             pcmFormat: playerAudioFormat,
             frameCapacity: inputBuffer.frameCapacity
         )!
-        // TODO: error handling
         try! inputToPlayerAudioConverter.convert(to: playerBuffer, from: inputBuffer)
         
         // Schedule it for playing
