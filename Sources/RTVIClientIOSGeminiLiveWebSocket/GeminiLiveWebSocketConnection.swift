@@ -127,10 +127,16 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
                 }
             }
         }
+        
+        // We finished all the connect() steps
+        didFinishConnect = true
     }
     
     func sendUserAudio(_ audio: Data) async throws {
-        // TODO: first check if we've successfully run through connect()?
+        // Only send user audio once the connect() steps (which includes model setup) have finished
+        if !didFinishConnect {
+            return
+        }
         try await sendMessage(
             message: WebSocketMessages.Outbound.AudioInput(audio: audio)
         )
@@ -174,10 +180,12 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
     ) {
         print("[pk] web socket closed! close code \(closeCode)")
         socket = nil
+        didFinishConnect = false
     }
     
     // MARK: - Private
     
     private let options: GeminiLiveWebSocketConnection.Options
     private var socket: URLSessionWebSocketTask?
+    private var didFinishConnect = false
 }

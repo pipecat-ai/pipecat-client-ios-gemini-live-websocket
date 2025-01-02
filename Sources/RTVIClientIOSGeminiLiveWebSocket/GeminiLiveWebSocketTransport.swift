@@ -59,13 +59,14 @@ public class GeminiLiveWebSocketTransport: Transport {
         // start audio player
         try audioPlayer.start()
         
-        // start connecting
-        try await connection.connect()
-        
         // start audio input if needed
+        // this is done before connecting WebSocket to guarantee that by the time we transition to the .connected state isMicEnabled() reflects the truth
         if options.enableMic {
             try audioRecorder.resume()
         }
+        
+        // start connecting
+        try await connection.connect()
         
         // initialize tracks (which are just dummy values)
         updateTracks(
