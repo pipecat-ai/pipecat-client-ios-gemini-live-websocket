@@ -67,6 +67,12 @@ public class GeminiLiveWebSocketTransport: Transport {
             try audioRecorder.resume()
         }
         
+        // initialize tracks (which are just dummy values)
+        updateTracks(
+            localAudio: .init(id: UUID().uuidString),
+            botAudio: .init(id: UUID().uuidString)
+        )
+        
         // go to connected state
         // (unless we've already leaped ahead to the ready state - see connectionDidFinishModelSetup())
         if _state == .connecting {
@@ -87,6 +93,12 @@ public class GeminiLiveWebSocketTransport: Transport {
         
         // stop managing audio device configuration
         audioManager.stopManaging()
+        
+        // clear tracks (which are just dummy values)
+        updateTracks(
+            localAudio: nil,
+            botAudio: nil
+        )
         
         setState(state: .disconnected)
     }
@@ -206,13 +218,15 @@ public class GeminiLiveWebSocketTransport: Transport {
     }
     
     public func tracks() -> RTVIClientIOS.Tracks? {
-        // TODO: later
         return .init(
             local: .init(
-                audio: nil,
-                video: nil
+                audio: localAudioTrackID,
+                video: nil // video not yet supported
             ),
-            bot: nil
+            bot: .init(
+                audio: botAudioTrackID,
+                video: nil // video not yet supported
+            )
         )
     }
     
@@ -236,6 +250,10 @@ public class GeminiLiveWebSocketTransport: Transport {
     )
     private var devicesInitialized: Bool = false
     private var _selectedMic: MediaDeviceInfo?
+    
+    // audio tracks aren't directly useful to the user; they're just dummy values for API completeness
+    private var localAudioTrackID: MediaTrackId?
+    private var botAudioTrackID: MediaTrackId?
     
     private func wireUpAudioInput() {
         Task {
@@ -295,6 +313,17 @@ public class GeminiLiveWebSocketTransport: Transport {
         } catch {
             Logger.shared.error("Audio recorder failed to adapt to device change")
         }
+    }
+    
+    // updates tracks.
+    // note that they're not directly useful to the user; they're just dummy values for API completeness.
+    private func updateTracks(localAudio: MediaTrackId?, botAudio: MediaTrackId?) {
+        if localAudio == localAudioTrackID && botAudio == botAudioTrackID {
+            return
+        }
+        localAudioTrackID = localAudio
+        botAudioTrackID = botAudio
+        delegate?.onTracksUpdated(tracks: tracks()!)
     }
 }
 
