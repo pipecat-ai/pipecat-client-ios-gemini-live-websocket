@@ -131,7 +131,7 @@ class AudioRecorder {
         // UGH this feels like a total hack. But somehow the format converter is assigning a nonsense frameLength to the targetBuffer?
         targetBuffer.frameLength = inputBuffer.frameLength
         if let error {
-            print("[pk] Error converting raw mic audio data into target format: \(error)")
+            Logger.shared.warn("Error converting raw mic audio data into target format: \(error)")
         }
         return targetBuffer
     }

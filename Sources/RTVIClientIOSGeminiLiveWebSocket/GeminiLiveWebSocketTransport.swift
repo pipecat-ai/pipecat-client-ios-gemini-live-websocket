@@ -256,7 +256,7 @@ public class GeminiLiveWebSocketTransport: Transport {
                 do {
                     try await connection.sendUserAudio(audio)
                 } catch {
-                    Logger.shared.warn("send user audio failed: \(error.localizedDescription)")
+                    Logger.shared.warn("Send user audio failed: \(error.localizedDescription)")
                 }
             }
         }

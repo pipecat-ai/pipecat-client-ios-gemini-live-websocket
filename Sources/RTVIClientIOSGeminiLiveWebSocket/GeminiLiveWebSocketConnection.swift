@@ -111,7 +111,7 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
                         }
                         continue
                     case .string(let string):
-                        Logger.shared.warn("received server message of unexpected type: \(string)")
+                        Logger.shared.warn("Received server message of unexpected type: \(string)")
                         continue
                     }
                 } catch {
@@ -146,7 +146,7 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
             data: encoder.encode(message),
             encoding: .utf8
         )!
-        print("sending message: \(messageString.prefix(50))")
+//        print("sending message: \(messageString.prefix(50))")
         try await socket?.send(.string(messageString))
     }
     
@@ -160,7 +160,7 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
         webSocketTask: URLSessionWebSocketTask,
         didOpenWithProtocol protocol: String?
     ) {
-        print("[pk] web socket opened!")
+//        print("web socket opened!")
     }
     
     func urlSession(
@@ -169,7 +169,7 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
         didCloseWith closeCode: URLSessionWebSocketTask.CloseCode,
         reason: Data?
     ) {
-        print("[pk] web socket closed! close code \(closeCode)")
+//        print("web socket closed! close code \(closeCode)")
         socket = nil
         didFinishConnect = false
     }
