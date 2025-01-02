@@ -1,8 +1,6 @@
 import AVFoundation
 import Foundation
 
-// TODO: can we probably get rid of DeviceKind and a bunch of other stuff in here, since we don't care about video (for now, at least?)
-
 /// Enumerated value specifying a device's kind.
 public enum DeviceKind: RawRepresentable, CaseIterable, Equatable, Hashable {
     case videoInput
