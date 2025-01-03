@@ -30,7 +30,10 @@ public class GeminiLiveWebSocketTransport: Transport {
         
         self.setState(state: .initializing)
         
-        // trigger the initial status
+        // start managing audio device configuration
+        audioManager.startManagingIfNecessary()
+        
+        // report initial available & selected devices
         self.delegate?.onAvailableMicsUpdated(mics: self.getAllMics());
         self._selectedMic = self.selectedMic()
         self.delegate?.onMicUpdated(mic: self._selectedMic)
@@ -48,13 +51,13 @@ public class GeminiLiveWebSocketTransport: Transport {
         
         // stop audio player
         audioPlayer.stop()
+        
+        // stop managing audio device configuration
+        audioManager.stopManaging()
     }
     
     public func connect(authBundle: RTVIClientIOS.AuthBundle?) async throws {
         self.setState(state: .connecting)
-        
-        // start managing audio device configuration
-        audioManager.startManaging()
         
         // start audio player
         try audioPlayer.start()
@@ -91,9 +94,6 @@ public class GeminiLiveWebSocketTransport: Transport {
         
         // stop audio player
         audioPlayer.stop()
-        
-        // stop managing audio device configuration
-        audioManager.stopManaging()
         
         // clear tracks (which are just dummy values)
         updateTracks(
@@ -163,7 +163,6 @@ public class GeminiLiveWebSocketTransport: Transport {
                         try await connection.sendMessage(message: message)
                     }
                     // Synthesize (i.e. fake) an RTVI-style action response from the server
-                    let id = message.id
                     onMessage?(.init(
                         type: RTVIMessageInbound.MessageType.ACTION_RESPONSE,
                         data: String(data: try JSONEncoder().encode(ActionResponse.init(result: .boolean(true))), encoding: .utf8),
@@ -173,10 +172,16 @@ public class GeminiLiveWebSocketTransport: Transport {
             }
         } else {
             if message.type == RTVIMessageOutbound.MessageType.ACTION {
-                logOperationNotSupported("\(#function) of type 'action' (except for append_to_messages)")
+                logOperationNotSupported("\(#function) of type 'action' (except for 'append_to_messages')")
             } else {
                 logOperationNotSupported("\(#function) of type '\(message.type)'")
             }
+            // Tell RTVIClient that sendMessage() has failed so the user's completion handler can run
+            onMessage?(.init(
+                type: RTVIMessageInbound.MessageType.ERROR_RESPONSE,
+                data: "", // passing nil causes a crash
+                id: message.id
+            ))
         }
     }
     
@@ -200,9 +205,11 @@ public class GeminiLiveWebSocketTransport: Transport {
                     name: connectedBotParticipant.name,
                     local: connectedBotParticipant.local
                 )
+                self.delegate?.onParticipantJoined(participant: connectedBotParticipant)
                 self.delegate?.onBotConnected(participant: connectedBotParticipant)
             }
             if state == .disconnected {
+                self.delegate?.onParticipantLeft(participant: connectedBotParticipant)
                 self.delegate?.onBotDisconnected(participant: connectedBotParticipant)
                 self.delegate?.onDisconnected()
             }
