@@ -4,11 +4,11 @@ URL_BASE_PATH=$1
 rm -rf ./tmpDocs
 
 # create the docs
-xcodebuild docbuild -scheme 'RTVIClientIOSDaily' -destination "generic/platform=iOS" -derivedDataPath ./tmpDocs
+xcodebuild docbuild -scheme 'PipecatClientIOSGeminiLiveWebSocket' -destination "generic/platform=iOS" -derivedDataPath ./tmpDocs
 
 # convert the doc archive for static hosting
 $(xcrun --find docc) process-archive transform-for-static-hosting \
-./tmpDocs/Build/Products/Debug-iphoneos/RTVIClientIOSDaily.doccarchive \
+./tmpDocs/Build/Products/Debug-iphoneos/RTVIClientIOSGeminiLiveWebSocket.doccarchive \
 --output-path ./tmpDocs/htmldoc \
 --hosting-base-path $URL_BASE_PATH
 # In case we need to change the host path
