@@ -31,7 +31,7 @@ let options: RTVIClientOptions = .init(
                 .init(name: "api_key", value: .string("<your Gemini api key>")),
                 .init(name: "initial_messages", value: .array([
                     .object([
-                        "role": .string("user"),
+                        "role": .string("user"), // "user" | "system"
                         "content": .string("I need your help planning my next vacation.")
                     ])
                 ])),
