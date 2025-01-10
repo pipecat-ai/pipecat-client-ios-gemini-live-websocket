@@ -371,6 +371,9 @@ extension GeminiLiveWebSocketTransport: AudioPlayer.Delegate {
         delegate?.onBotStoppedSpeaking(participant: connectedBotParticipant)
     }
     
+    func audioPlayer(_ audioPlayer: AudioPlayer, didGetAudioLevel audioLevel: Float) {
+        delegate?.onRemoteAudioLevel(level: audioLevel, participant: connectedBotParticipant)
+    }
 }
 
 // MARK: - AudioManagerDelegate

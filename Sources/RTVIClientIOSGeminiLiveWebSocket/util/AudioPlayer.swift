@@ -7,6 +7,7 @@ class AudioPlayer {
     protocol Delegate: AnyObject {
         func audioPlayerDidStartPlayback(_ audioPlayer: AudioPlayer)
         func audioPlayerDidFinishPlayback(_ audioPlayer: AudioPlayer)
+        func audioPlayer(_ audioPlayer: AudioPlayer, didGetAudioLevel audioLevel: Float)
     }
     
     public weak var delegate: Delegate? = nil
@@ -41,6 +42,12 @@ class AudioPlayer {
             format: playerAudioFormat
         )
         
+        // Install a tap to compute audio level
+        installAudioLevelTap(onNode: playerNode) { [weak self] audioLevel in
+            guard let self else { return }
+            delegate?.audioPlayer(self, didGetAudioLevel: audioLevel)
+        }
+        
         // Now start the engine
         try audioEngine.start()
         try playerNode.play()
@@ -49,6 +56,7 @@ class AudioPlayer {
     }
     
     func stop() {
+        uninstallAudioLevelTap(onNode: playerNode)
         playerNode.stop()
         enqueuedBufferCount = 0
         audioEngine.stop()
