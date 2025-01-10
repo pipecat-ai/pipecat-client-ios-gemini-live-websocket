@@ -4,38 +4,54 @@ class AudioRecorder {
 
     // MARK: - Public
     
+    protocol Delegate: AnyObject {
+        func audioRecorder(_ audioPlayer: AudioRecorder, didGetAudioLevel audioLevel: Float)
+    }
+    
+    public weak var delegate: Delegate? = nil
+    
     var isRecording: Bool {
         audioEngine.isRunning
     }
     
     func resume() throws {
-        // If setup already happened, just start the engine
+        // If audio graph setup already happened, just start the engine
         if didSetup {
             try audioEngine.start()
             return
         }
         
         // Setup the audio engine for recording
+        audioEngine = AVAudioEngine()
         try audioEngine.inputNode.setVoiceProcessingEnabled(true) // important for ignoring output from the phone itself
         let inputNode = audioEngine.inputNode
         // Hmm, we really *should* be using inputNode.outputFormat, but for some reason after disconnecting then the voice cclient outputFormat reports 0hz sample rate, even though it *does* work (installing the tap works).
         // Some post suggests using the input format instead of the output one? https://stackoverflow.com/a/47902479
         let inputFormat = inputNode.inputFormat(forBus: 0)
+        
+        // Install a tap for recording
         let formatConverter = AVAudioConverter(
             from: inputFormat,
-            to: AudioCommon.format
+            to: AudioCommon.serverAudioFormat
         )!
         audioEngine.inputNode.installTap(
             onBus: 0,
-            // 1 second buffer
-            bufferSize: UInt32(AudioCommon.format.sampleRate),
+            bufferSize: UInt32(AudioCommon.serverAudioFormat.sampleRate) / UInt32(AudioCommon.audioLevelReportingRate),
             format: inputFormat
-        ) { inputBuffer, time in
+        ) { [weak self] inputBuffer, time in
+            guard let self else { return }
+            
+            // Report audio level
+            var audioLevel = AudioCommon.calculateRMSAudioLevel(fromBuffer: inputBuffer)
+            // Note: not sure why audio level is so low for local audio - boosting it artificially
+            audioLevel = min(1, audioLevel * 10)
+            delegate?.audioRecorder(self, didGetAudioLevel: audioLevel)
+            
             // Convert captured buffer to target format
             let targetBuffer = Self.convertToTargetFormat(
                 inputBuffer: inputBuffer,
                 inputFormat: inputFormat,
-                targetFormat: AudioCommon.format,
+                targetFormat: AudioCommon.serverAudioFormat,
                 formatConverter: formatConverter)
             
             // Convert buffer to data
@@ -49,7 +65,7 @@ class AudioRecorder {
                 length: Int(targetBuffer.frameLength * targetBuffer.format.streamDescription.pointee.mBytesPerFrame)
             )
             
-            self.streamAudioContinuation?.yield(data as Data)
+            streamAudioContinuation?.yield(data as Data)
         }
         
         // Now start the engine
@@ -62,12 +78,15 @@ class AudioRecorder {
         audioEngine.pause()
     }
     
-    func stop(andTerminateStream endStream: Bool) {
+    func stop() {
+        if !didSetup { return }
         audioEngine.inputNode.removeTap(onBus: 0)
         audioEngine.stop()
-        if endStream {
-            streamAudioContinuation?.finish()
-        }
+        didSetup = false
+    }
+    
+    func terminateAudioStream() {
+        streamAudioContinuation?.finish()
     }
     
     func streamAudio() -> AsyncStream<Data> {
@@ -77,10 +96,7 @@ class AudioRecorder {
     }
     
     func adaptToDeviceChange() throws {
-        if !didSetup { return }
-        stop(andTerminateStream: false)
-        audioEngine = AVAudioEngine()
-        didSetup = false
+        stop()
         try resume()
     }
     

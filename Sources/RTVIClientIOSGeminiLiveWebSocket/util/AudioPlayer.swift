@@ -15,7 +15,7 @@ class AudioPlayer {
     init() {
         audioEngine = AVAudioEngine()
         playerNode = AVAudioPlayerNode()
-        inputAudioFormat = AudioCommon.format
+        inputAudioFormat = AudioCommon.serverAudioFormat
         playerAudioFormat = AVAudioFormat(
             standardFormatWithSampleRate: inputAudioFormat.sampleRate,
             channels: inputAudioFormat.channelCount
@@ -24,7 +24,7 @@ class AudioPlayer {
     }
     
     func start() throws {
-        // If setup already happened, just start the player + engine
+        // If audio graph setup already happened, just start the player + engine
         if didSetup {
             try audioEngine.start()
             try playerNode.play()
@@ -32,6 +32,8 @@ class AudioPlayer {
         }
         
         // Setup the audio engine for playback
+        audioEngine = AVAudioEngine()
+        playerNode = AVAudioPlayerNode()
         audioEngine.attach(playerNode)
         audioEngine.connect(
             playerNode,
@@ -43,7 +45,7 @@ class AudioPlayer {
         )
         
         // Install a tap to compute audio level
-        installAudioLevelTap(onNode: playerNode) { [weak self] audioLevel in
+        AudioCommon.installAudioLevelTap(onNode: playerNode) { [weak self] audioLevel in
             guard let self else { return }
             delegate?.audioPlayer(self, didGetAudioLevel: audioLevel)
         }
@@ -56,19 +58,17 @@ class AudioPlayer {
     }
     
     func stop() {
-        uninstallAudioLevelTap(onNode: playerNode)
+        if !didSetup { return }
+        AudioCommon.uninstallAudioLevelTap(onNode: playerNode)
         playerNode.stop()
         enqueuedBufferCount = 0
         audioEngine.stop()
+        didSetup = false
     }
     
     // TODO: maybe someday be smarter so changing devices doesn't cut off current output
     func adaptToDeviceChange() throws {
-        if !didSetup { return }
         stop()
-        audioEngine = AVAudioEngine()
-        playerNode = AVAudioPlayerNode()
-        didSetup = false
         try start()
     }
     

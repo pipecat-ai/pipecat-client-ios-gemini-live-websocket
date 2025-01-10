@@ -18,6 +18,7 @@ public class GeminiLiveWebSocketTransport: Transport {
         connection = GeminiLiveWebSocketConnection(options: options.webSocketConnectionOptions)
         connection.delegate = self
         audioPlayer.delegate = self
+        audioRecorder.delegate = self
         audioManager.delegate = self
         logUnsupportedOptions()
     }
@@ -46,8 +47,9 @@ public class GeminiLiveWebSocketTransport: Transport {
     }
     
     public func release() {
-        // stop audio input
-        audioRecorder.stop(andTerminateStream: true)
+        // stop audio input and terminate stream
+        audioRecorder.stop()
+        audioRecorder.terminateAudioStream()
         
         // stop audio player
         audioPlayer.stop()
@@ -90,7 +92,7 @@ public class GeminiLiveWebSocketTransport: Transport {
         
         // stop audio input
         // (why not just pause it? to avoid problems in case the user forgets to call release() before instantiating a new voice client)
-        audioRecorder.stop(andTerminateStream: false)
+        audioRecorder.stop()
         
         // stop audio player
         audioPlayer.stop()
@@ -373,6 +375,14 @@ extension GeminiLiveWebSocketTransport: AudioPlayer.Delegate {
     
     func audioPlayer(_ audioPlayer: AudioPlayer, didGetAudioLevel audioLevel: Float) {
         delegate?.onRemoteAudioLevel(level: audioLevel, participant: connectedBotParticipant)
+    }
+}
+
+// MARK: - AudioRecorder.Delegate
+
+extension GeminiLiveWebSocketTransport: AudioRecorder.Delegate {
+    func audioRecorder(_ audioPlayer: AudioRecorder, didGetAudioLevel audioLevel: Float) {
+        delegate?.onUserAudioLevel(level: audioLevel)
     }
 }
 
