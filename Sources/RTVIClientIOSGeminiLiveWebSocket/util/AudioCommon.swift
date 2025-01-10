@@ -1,4 +1,4 @@
-import AVFoundation
+import AVFAudio
 
 // enum just for namespacing
 enum AudioCommon {
