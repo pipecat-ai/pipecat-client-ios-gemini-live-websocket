@@ -109,7 +109,7 @@ enum WebSocketMessages {
                 realtimeInput = .init(
                     mediaChunks: [
                         .init(
-                            mimeType: "audio/pcm;rate=\(Int(AudioCommon.format.sampleRate))",
+                            mimeType: "audio/pcm;rate=\(Int(AudioCommon.serverAudioFormat.sampleRate))",
                             data: audio.base64EncodedString()
                         )
                     ]
