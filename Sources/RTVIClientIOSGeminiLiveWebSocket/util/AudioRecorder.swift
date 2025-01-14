@@ -1,14 +1,14 @@
 import AVFAudio
 
+protocol AudioRecorderDelegate: AnyObject {
+    func audioRecorder(_ audioPlayer: AudioRecorder, didGetAudioLevel audioLevel: Float)
+}
+
 class AudioRecorder {
 
     // MARK: - Public
     
-    protocol Delegate: AnyObject {
-        func audioRecorder(_ audioPlayer: AudioRecorder, didGetAudioLevel audioLevel: Float)
-    }
-    
-    public weak var delegate: Delegate? = nil
+    public weak var delegate: AudioRecorderDelegate? = nil
     
     var isRecording: Bool {
         audioEngine.isRunning

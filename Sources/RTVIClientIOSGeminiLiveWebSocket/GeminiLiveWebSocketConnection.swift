@@ -1,6 +1,17 @@
 import Foundation
 import RTVIClientIOS
 
+protocol GeminiLiveWebSocketConnectionDelegate: AnyObject {
+    func connectionDidFinishModelSetup(
+        _: GeminiLiveWebSocketConnection
+    )
+    func connection(
+        _: GeminiLiveWebSocketConnection,
+        didReceiveModelAudioBytes audioBytes: Data
+    )
+    func connectionDidDetectUserInterruption(_: GeminiLiveWebSocketConnection)
+}
+
 class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
     
     // MARK: - Public
@@ -11,18 +22,7 @@ class GeminiLiveWebSocketConnection: NSObject, URLSessionWebSocketDelegate {
         let generationConfig: Value?
     }
     
-    protocol Delegate: AnyObject {
-        func connectionDidFinishModelSetup(
-            _: GeminiLiveWebSocketConnection
-        )
-        func connection(
-            _: GeminiLiveWebSocketConnection,
-            didReceiveModelAudioBytes audioBytes: Data
-        )
-        func connectionDidDetectUserInterruption(_: GeminiLiveWebSocketConnection)
-    }
-    
-    public weak var delegate: Delegate? = nil
+    public weak var delegate: GeminiLiveWebSocketConnectionDelegate? = nil
     
     init(options: Options) {
         self.options = options

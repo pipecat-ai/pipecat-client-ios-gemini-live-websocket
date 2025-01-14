@@ -332,7 +332,7 @@ public class GeminiLiveWebSocketTransport: Transport {
 
 // MARK: - GeminiLiveWebSocketConnection.Delegate
 
-extension GeminiLiveWebSocketTransport: GeminiLiveWebSocketConnection.Delegate {
+extension GeminiLiveWebSocketTransport: GeminiLiveWebSocketConnectionDelegate {
     func connectionDidFinishModelSetup(_: GeminiLiveWebSocketConnection) {
         // If this happens *before* we've entered the connected state, first pass through that state
         if _state == .connecting {
@@ -364,7 +364,7 @@ extension GeminiLiveWebSocketTransport: GeminiLiveWebSocketConnection.Delegate {
 
 // MARK: - AudioPlayer.Delegate
 
-extension GeminiLiveWebSocketTransport: AudioPlayer.Delegate {
+extension GeminiLiveWebSocketTransport: AudioPlayerDelegate {
     func audioPlayerDidStartPlayback(_ audioPlayer: AudioPlayer) {
         delegate?.onBotStartedSpeaking(participant: connectedBotParticipant)
     }
@@ -380,7 +380,7 @@ extension GeminiLiveWebSocketTransport: AudioPlayer.Delegate {
 
 // MARK: - AudioRecorder.Delegate
 
-extension GeminiLiveWebSocketTransport: AudioRecorder.Delegate {
+extension GeminiLiveWebSocketTransport: AudioRecorderDelegate {
     func audioRecorder(_ audioPlayer: AudioRecorder, didGetAudioLevel audioLevel: Float) {
         delegate?.onUserAudioLevel(level: audioLevel)
     }

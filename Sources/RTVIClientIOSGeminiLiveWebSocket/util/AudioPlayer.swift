@@ -1,16 +1,16 @@
 import AVFAudio
 
+protocol AudioPlayerDelegate: AnyObject {
+    func audioPlayerDidStartPlayback(_ audioPlayer: AudioPlayer)
+    func audioPlayerDidFinishPlayback(_ audioPlayer: AudioPlayer)
+    func audioPlayer(_ audioPlayer: AudioPlayer, didGetAudioLevel audioLevel: Float)
+}
+
 class AudioPlayer {
     
     // MARK: - Public
     
-    protocol Delegate: AnyObject {
-        func audioPlayerDidStartPlayback(_ audioPlayer: AudioPlayer)
-        func audioPlayerDidFinishPlayback(_ audioPlayer: AudioPlayer)
-        func audioPlayer(_ audioPlayer: AudioPlayer, didGetAudioLevel audioLevel: Float)
-    }
-    
-    public weak var delegate: Delegate? = nil
+    public weak var delegate: AudioPlayerDelegate? = nil
     
     init() {
         audioEngine = AVAudioEngine()
