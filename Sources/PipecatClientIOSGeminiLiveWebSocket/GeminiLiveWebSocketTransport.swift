@@ -8,7 +8,7 @@ public class GeminiLiveWebSocketTransport: Transport {
     // MARK: - Public
     
     /// Voice client delegate (used directly by user's code)
-    public var delegate: PipecatClientIOS.RTVIClientDelegate?
+    public weak var delegate: PipecatClientIOS.RTVIClientDelegate?
     
     /// RTVI inbound message handler (for sending RTVI-style messages to voice client code to handle)
     public var onMessage: ((PipecatClientIOS.RTVIMessageInbound) -> Void)?
