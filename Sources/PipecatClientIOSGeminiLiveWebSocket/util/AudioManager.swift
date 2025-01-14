@@ -225,7 +225,9 @@ final class AudioManager {
         }
 
         if audioManagerDidChangeDevices {
-            self.delegate?.audioManagerDidChangeDevices(self)
+            if isManaging {
+                self.delegate?.audioManagerDidChangeDevices(self)
+            }
             self.configureAudioSession()
         }
     }
