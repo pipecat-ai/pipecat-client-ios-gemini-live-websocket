@@ -24,13 +24,7 @@ class AudioPlayer {
     }
     
     func start() throws {
-        // If audio graph setup already happened, just start the player + engine
-        if didSetup {
-            try audioEngine.start()
-            try playerNode.play()
-            return
-        }
-        
+        if audioEngine.isRunning { return }
         // Setup the audio engine for playback
         audioEngine = AVAudioEngine()
         playerNode = AVAudioPlayerNode()
@@ -53,26 +47,25 @@ class AudioPlayer {
         // Now start the engine
         try audioEngine.start()
         try playerNode.play()
-        
-        didSetup = true
     }
     
     func stop() {
-        if !didSetup { return }
+        if !audioEngine.isRunning { return }
         AudioCommon.uninstallAudioLevelTap(onNode: playerNode)
         playerNode.stop()
         enqueuedBufferCount = 0
         audioEngine.stop()
-        didSetup = false
     }
     
     // TODO: maybe someday be smarter so changing devices doesn't cut off current output
     func adaptToDeviceChange() throws {
+        if !audioEngine.isRunning { return }
         stop()
         try start()
     }
     
     func clearEnqueuedBytes() {
+        if !audioEngine.isRunning { return }
         playerNode.stop()
         enqueuedBufferCount = 0
         playerNode.play()
@@ -80,6 +73,7 @@ class AudioPlayer {
     
     // Adapted from https://stackoverflow.com/questions/28048568/convert-avaudiopcmbuffer-to-nsdata-and-back
     func enqueueBytes(_ bytes: Data) {
+        if !audioEngine.isRunning { return }
         // Prepare input buffer
         let inputBuffer = AVAudioPCMBuffer(
             pcmFormat: inputAudioFormat,
@@ -110,7 +104,6 @@ class AudioPlayer {
     
     // MARK: - Private
     
-    private var didSetup = false
     private var audioEngine: AVAudioEngine
     private var playerNode: AVAudioPlayerNode
     private let inputAudioFormat: AVAudioFormat
@@ -118,14 +111,14 @@ class AudioPlayer {
     private let inputToPlayerAudioConverter: AVAudioConverter
     private var enqueuedBufferCount = 0
     
-    func incrementEnqueuedBufferCount() {
+    private func incrementEnqueuedBufferCount() {
         enqueuedBufferCount += 1
         if enqueuedBufferCount == 1 {
             delegate?.audioPlayerDidStartPlayback(self)
         }
     }
     
-    func decrementEnqueuedBufferCount() {
+    private func decrementEnqueuedBufferCount() {
         guard enqueuedBufferCount > 0 else { return }
         enqueuedBufferCount -= 1
         if enqueuedBufferCount == 0 {

@@ -96,8 +96,11 @@ class AudioRecorder {
     }
     
     func adaptToDeviceChange() throws {
+        let wasRunning = audioEngine.isRunning // not paused or stopped
         stop()
-        try resume()
+        if wasRunning {
+            try resume()
+        }
     }
     
     // MARK: - Private
