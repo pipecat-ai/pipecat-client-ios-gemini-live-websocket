@@ -1,7 +1,7 @@
 // MARK: - Inbound
 
 import Foundation
-import RTVIClientIOS
+import PipecatClientIOS
 
 // enums just for namespacing
 enum WebSocketMessages {

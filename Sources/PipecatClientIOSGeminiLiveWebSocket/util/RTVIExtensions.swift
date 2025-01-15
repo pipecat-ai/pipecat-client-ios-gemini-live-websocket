@@ -1,4 +1,4 @@
-import RTVIClientIOS
+import PipecatClientIOS
 
 extension RTVIClientOptions {
     var webSocketConnectionOptions: GeminiLiveWebSocketConnection.Options {

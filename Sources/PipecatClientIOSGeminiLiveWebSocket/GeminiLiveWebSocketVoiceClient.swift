@@ -1,5 +1,5 @@
 import Foundation
-import RTVIClientIOS
+import PipecatClientIOS
 
 /// An RTVI client. Connects to a Gemini Live WebSocket backend and handles bidirectional audio streaming
 @MainActor

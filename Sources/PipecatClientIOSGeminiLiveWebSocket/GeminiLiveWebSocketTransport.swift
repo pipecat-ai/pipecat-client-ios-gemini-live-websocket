@@ -1,5 +1,5 @@
 import Foundation
-import RTVIClientIOS
+import PipecatClientIOS
 import OSLog
 
 /// An RTVI transport to connect with the Gemini Live WebSocket backend.
@@ -8,12 +8,12 @@ public class GeminiLiveWebSocketTransport: Transport {
     // MARK: - Public
     
     /// Voice client delegate (used directly by user's code)
-    public var delegate: RTVIClientIOS.RTVIClientDelegate?
+    public var delegate: PipecatClientIOS.RTVIClientDelegate?
     
     /// RTVI inbound message handler (for sending RTVI-style messages to voice client code to handle)
-    public var onMessage: ((RTVIClientIOS.RTVIMessageInbound) -> Void)?
+    public var onMessage: ((PipecatClientIOS.RTVIMessageInbound) -> Void)?
     
-    public required init(options: RTVIClientIOS.RTVIClientOptions) {
+    public required init(options: PipecatClientIOS.RTVIClientOptions) {
         self.options = options
         connection = GeminiLiveWebSocketConnection(options: options.webSocketConnectionOptions)
         connection.delegate = self
@@ -58,7 +58,7 @@ public class GeminiLiveWebSocketTransport: Transport {
         audioManager.stopManaging()
     }
     
-    public func connect(authBundle: RTVIClientIOS.AuthBundle?) async throws {
+    public func connect(authBundle: PipecatClientIOS.AuthBundle?) async throws {
         self.setState(state: .connecting)
         
         // start audio player
@@ -106,30 +106,30 @@ public class GeminiLiveWebSocketTransport: Transport {
         setState(state: .disconnected)
     }
     
-    public func getAllMics() -> [RTVIClientIOS.MediaDeviceInfo] {
+    public func getAllMics() -> [PipecatClientIOS.MediaDeviceInfo] {
         audioManager.availableDevices.map { $0.toRtvi() }
     }
     
-    public func getAllCams() -> [RTVIClientIOS.MediaDeviceInfo] {
+    public func getAllCams() -> [PipecatClientIOS.MediaDeviceInfo] {
         logOperationNotSupported(#function)
         return []
     }
     
-    public func updateMic(micId: RTVIClientIOS.MediaDeviceId) async throws {
+    public func updateMic(micId: PipecatClientIOS.MediaDeviceId) async throws {
         audioManager.preferredAudioDevice = .init(deviceID: micId.id)
         // Changing preferred audio device probably changed actual audio device in use
         updateSelectedMicIfNeeded()
     }
     
-    public func updateCam(camId: RTVIClientIOS.MediaDeviceId) async throws {
+    public func updateCam(camId: PipecatClientIOS.MediaDeviceId) async throws {
         logOperationNotSupported(#function)
     }
     
-    public func selectedMic() -> RTVIClientIOS.MediaDeviceInfo? {
+    public func selectedMic() -> PipecatClientIOS.MediaDeviceInfo? {
         audioManager.availableDevices.first { $0.deviceID == audioManager.audioDevice.deviceID }?.toRtvi()
     }
     
-    public func selectedCam() -> RTVIClientIOS.MediaDeviceInfo? {
+    public func selectedCam() -> PipecatClientIOS.MediaDeviceInfo? {
         logOperationNotSupported(#function)
         return nil
     }
@@ -155,7 +155,7 @@ public class GeminiLiveWebSocketTransport: Transport {
         return audioRecorder.isRecording
     }
     
-    public func sendMessage(message: RTVIClientIOS.RTVIMessageOutbound) throws {
+    public func sendMessage(message: PipecatClientIOS.RTVIMessageOutbound) throws {
         if let data = message.decodeActionData(), data.service == "llm" && data.action == "append_to_messages" {
             let messagesArgument = data.arguments?.first { $0.name == "messages" }
             if let messages = messagesArgument?.value.toTextInputWebSocketMessagesArray() {
@@ -187,11 +187,11 @@ public class GeminiLiveWebSocketTransport: Transport {
         }
     }
     
-    public func state() -> RTVIClientIOS.TransportState {
+    public func state() -> PipecatClientIOS.TransportState {
         self._state
     }
     
-    public func setState(state: RTVIClientIOS.TransportState) {
+    public func setState(state: PipecatClientIOS.TransportState) {
         let previousState = self._state
         
         self._state = state
@@ -222,7 +222,7 @@ public class GeminiLiveWebSocketTransport: Transport {
         return [.connected, .ready].contains(self._state)
     }
     
-    public func tracks() -> RTVIClientIOS.Tracks? {
+    public func tracks() -> PipecatClientIOS.Tracks? {
         return .init(
             local: .init(
                 audio: localAudioTrackID,

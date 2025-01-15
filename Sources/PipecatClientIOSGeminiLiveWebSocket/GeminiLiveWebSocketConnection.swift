@@ -1,5 +1,5 @@
 import Foundation
-import RTVIClientIOS
+import PipecatClientIOS
 
 protocol GeminiLiveWebSocketConnectionDelegate: AnyObject {
     func connectionDidFinishModelSetup(
