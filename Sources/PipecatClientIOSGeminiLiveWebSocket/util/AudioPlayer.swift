@@ -46,7 +46,7 @@ class AudioPlayer {
         
         // Now start the engine
         try audioEngine.start()
-        try playerNode.play()
+        playerNode.play()
         
         isRunning = true
     }
