@@ -234,10 +234,11 @@ final class AudioManager {
         }
 
         if audioManagerDidChangeDevices {
+            self.configureAudioSession()
+            // We're firing this delegate *after* we're configuring the audio session so that in the delegate we can already assume a new device is ready for use
             if isManaging {
                 self.delegate?.audioManagerDidChangeDevices(self)
             }
-            self.configureAudioSession()
         }
     }
 
