@@ -77,6 +77,11 @@ class AudioPlayer {
     // Adapted from https://stackoverflow.com/questions/28048568/convert-avaudiopcmbuffer-to-nsdata-and-back
     func enqueueBytes(_ bytes: Data) {
         if !isRunning { return }
+        if isRunning && !audioEngine.isRunning {
+            // Sometimes when disconecting Bluetooth the audio engine isn't actually running when we expect it to be.
+            // This hard reset seems to do the trick.
+            try? adaptToDeviceChange()
+        }
         // Prepare input buffer
         let inputBuffer = AVAudioPCMBuffer(
             pcmFormat: inputAudioFormat,
