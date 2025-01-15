@@ -24,7 +24,7 @@ class AudioPlayer {
     }
     
     func start() throws {
-        if audioEngine.isRunning { return }
+        if isRunning { return }
         // Setup the audio engine for playback
         audioEngine = AVAudioEngine()
         playerNode = AVAudioPlayerNode()
@@ -47,25 +47,28 @@ class AudioPlayer {
         // Now start the engine
         try audioEngine.start()
         try playerNode.play()
+        
+        isRunning = true
     }
     
     func stop() {
-        if !audioEngine.isRunning { return }
+        if !isRunning { return }
         AudioCommon.uninstallAudioLevelTap(onNode: playerNode)
         playerNode.stop()
         enqueuedBufferCount = 0
         audioEngine.stop()
+        isRunning = false
     }
     
     // TODO: maybe someday be smarter so changing devices doesn't cut off current output
     func adaptToDeviceChange() throws {
-        if !audioEngine.isRunning { return }
+        if !isRunning { return } // TODO: weird, why is audioEngine.isRunning false??
         stop()
         try start()
     }
     
     func clearEnqueuedBytes() {
-        if !audioEngine.isRunning { return }
+        if !isRunning { return }
         playerNode.stop()
         enqueuedBufferCount = 0
         playerNode.play()
@@ -73,7 +76,7 @@ class AudioPlayer {
     
     // Adapted from https://stackoverflow.com/questions/28048568/convert-avaudiopcmbuffer-to-nsdata-and-back
     func enqueueBytes(_ bytes: Data) {
-        if !audioEngine.isRunning { return }
+        if !isRunning { return }
         // Prepare input buffer
         let inputBuffer = AVAudioPCMBuffer(
             pcmFormat: inputAudioFormat,
@@ -110,6 +113,8 @@ class AudioPlayer {
     private let playerAudioFormat: AVAudioFormat
     private let inputToPlayerAudioConverter: AVAudioConverter
     private var enqueuedBufferCount = 0
+    // Sadly we need to track isRunning state ourselves rather than rely on audioEngine.isRunning, because it sometimes goes to false right on a device change, throwing us off in adaptToDeviceChange() (which then thinks there's nothing to do)
+    private var isRunning = false
     
     private func incrementEnqueuedBufferCount() {
         enqueuedBufferCount += 1
