@@ -62,7 +62,7 @@ class AudioPlayer {
     
     // TODO: maybe someday be smarter so changing devices doesn't cut off current output
     func adaptToDeviceChange() throws {
-        if !isRunning { return } // TODO: weird, why is audioEngine.isRunning false??
+        if !isRunning { return }
         stop()
         try start()
     }
