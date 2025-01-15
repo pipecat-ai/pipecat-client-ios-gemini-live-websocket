@@ -24,13 +24,7 @@ class AudioPlayer {
     }
     
     func start() throws {
-        // If audio graph setup already happened, just start the player + engine
-        if didSetup {
-            try audioEngine.start()
-            try playerNode.play()
-            return
-        }
-        
+        if isRunning { return }
         // Setup the audio engine for playback
         audioEngine = AVAudioEngine()
         playerNode = AVAudioPlayerNode()
@@ -52,27 +46,29 @@ class AudioPlayer {
         
         // Now start the engine
         try audioEngine.start()
-        try playerNode.play()
+        playerNode.play()
         
-        didSetup = true
+        isRunning = true
     }
     
     func stop() {
-        if !didSetup { return }
+        if !isRunning { return }
         AudioCommon.uninstallAudioLevelTap(onNode: playerNode)
         playerNode.stop()
         enqueuedBufferCount = 0
         audioEngine.stop()
-        didSetup = false
+        isRunning = false
     }
     
     // TODO: maybe someday be smarter so changing devices doesn't cut off current output
     func adaptToDeviceChange() throws {
+        if !isRunning { return }
         stop()
         try start()
     }
     
     func clearEnqueuedBytes() {
+        if !isRunning { return }
         playerNode.stop()
         enqueuedBufferCount = 0
         playerNode.play()
@@ -80,6 +76,12 @@ class AudioPlayer {
     
     // Adapted from https://stackoverflow.com/questions/28048568/convert-avaudiopcmbuffer-to-nsdata-and-back
     func enqueueBytes(_ bytes: Data) {
+        if !isRunning { return }
+        if isRunning && !audioEngine.isRunning {
+            // Sometimes when disconecting Bluetooth the audio engine isn't actually running when we expect it to be.
+            // This hard reset seems to do the trick.
+            try? adaptToDeviceChange()
+        }
         // Prepare input buffer
         let inputBuffer = AVAudioPCMBuffer(
             pcmFormat: inputAudioFormat,
@@ -110,22 +112,23 @@ class AudioPlayer {
     
     // MARK: - Private
     
-    private var didSetup = false
     private var audioEngine: AVAudioEngine
     private var playerNode: AVAudioPlayerNode
     private let inputAudioFormat: AVAudioFormat
     private let playerAudioFormat: AVAudioFormat
     private let inputToPlayerAudioConverter: AVAudioConverter
     private var enqueuedBufferCount = 0
+    // Sadly we need to track isRunning state ourselves rather than rely on audioEngine.isRunning, because it sometimes goes to false right on a device change, throwing us off in adaptToDeviceChange() (which then thinks there's nothing to do)
+    private var isRunning = false
     
-    func incrementEnqueuedBufferCount() {
+    private func incrementEnqueuedBufferCount() {
         enqueuedBufferCount += 1
         if enqueuedBufferCount == 1 {
             delegate?.audioPlayerDidStartPlayback(self)
         }
     }
     
-    func decrementEnqueuedBufferCount() {
+    private func decrementEnqueuedBufferCount() {
         guard enqueuedBufferCount > 0 else { return }
         enqueuedBufferCount -= 1
         if enqueuedBufferCount == 0 {
