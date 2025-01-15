@@ -9,6 +9,8 @@ protocol AudioManagerDelegate: AnyObject {
 final class AudioManager {
     internal weak var delegate: AudioManagerDelegate? = nil
 
+    /// user's explicitly preferred device.
+    /// nil means "current system default".
     internal var preferredAudioDevice: AudioDeviceType? = nil {
         didSet {
             if self.preferredAudioDevice != oldValue {
@@ -17,6 +19,7 @@ final class AudioManager {
         }
     }
 
+    /// the actual audio device in use.
     internal var audioDevice: AudioDeviceType {
         let defaultDevice: AudioDeviceType = Self.defaultDevice
 
@@ -29,6 +32,12 @@ final class AudioManager {
         }
 
         return audioDevice
+    }
+    
+    /// the user's preferred device, if it's available, or nil—signifying "current system default"—otherwise.
+    /// this is the basis of the selectedMic() exposed to the user, matching the Daily transport's behavior.
+    internal var preferredAudioDeviceIfAvailable: AudioDeviceType? {
+        self.preferredAudioDeviceIsAvailable(preferredAudioDevice) ? self.preferredAudioDevice : nil
     }
 
     private var isManaging: Bool = false
@@ -303,8 +312,7 @@ final class AudioManager {
             .mixWithOthers,
         ]
 
-        let preferredDeviceToUse =
-            self.preferredAudioDeviceIsAvailable(preferredAudioDevice) ? self.preferredAudioDevice : nil
+        let preferredDeviceToUse = preferredAudioDeviceIfAvailable
 
         switch preferredDeviceToUse {
         case .speakerphone?:
