@@ -1,7 +1,7 @@
 import AVFAudio
 
 protocol AudioManagerDelegate: AnyObject {
-    func audioManagerDidChangeDevices(
+    func audioManagerDidChangeAvailableDevices(
         _ audioManager: AudioManager
     )
 }
@@ -39,6 +39,9 @@ final class AudioManager {
     internal var preferredAudioDeviceIfAvailable: AudioDeviceType? {
         self.preferredAudioDeviceIsAvailable(preferredAudioDevice) ? self.preferredAudioDevice : nil
     }
+    
+    /// the set of available devices on the system.
+    internal var availableDevices: [Device] = []
 
     private var isManaging: Bool = false
     private let notificationCenter: NotificationCenter
@@ -50,6 +53,8 @@ final class AudioManager {
     private var overriddenMode: AVAudioSession.Mode
     private var overriddenCategory: AVAudioSession.Category
     private var overriddenCategoryOptions: AVAudioSession.CategoryOptions
+    
+    private var availableDevicesPollTimer: Timer?
 
     private static var defaultDevice: AudioDeviceType {
         .speakerphone
@@ -106,85 +111,29 @@ final class AudioManager {
         self.overriddenMode = self.audioSession.mode
         self.overriddenCategory = self.audioSession.category
         self.overriddenCategoryOptions = self.audioSession.categoryOptions
-
-        self.configureAudioSession()
+        
+        // Note: the refresh does configureAudioSession(), so no need to do it explicitly
+        self.refreshAvailableDevicesAndReconfigureIfNeeded(
+            // initial state after startManaging() does not represent a "change", so don't fire callbacks
+            suppressDelegateCallbacks: true
+        )
+        self.availableDevicesPollTimer = Timer.scheduledTimer(
+            withTimeInterval: 0.25,
+            repeats: true
+        ) { [weak self] _ in
+            self?.refreshAvailableDevicesAndReconfigureIfNeeded()
+        }
     }
 
     func stopManaging() {
         assert(self.isManaging == true)
 
         self.isManaging = false
+        
+        self.availableDevicesPollTimer?.invalidate()
+        self.availableDevices = []
 
         self.resetAudioSession()
-    }
-    
-    // Adapted from WebrtcDevicesManager in Daily
-    var availableDevices: [Device] {
-        let audioSession = self.audioSession
-        let availableInputs = audioSession.availableInputs ?? []
-        let availableOutputs = audioSession.currentRoute.outputs
-
-        var deviceTypes = availableInputs.compactMap { input in
-            AudioDeviceType(sessionPort: input.portType)
-        }
-        // It always returns or earpiece or speakerphone on available inputs, depending on th category that
-        // we are using. So we need to add the one that is missing.
-        if deviceTypes.contains(AudioDeviceType.speakerphone) {
-            deviceTypes.append(AudioDeviceType.earpiece)
-        } else {
-            deviceTypes.append(AudioDeviceType.speakerphone)
-        }
-
-        // When we are using bluetooth as the default route,
-        // iOS does not list the bluetooth device on the list of availableInputs
-        let outputDevice = availableOutputs.first.flatMap { AudioDeviceType(sessionPort: $0.portType) }
-        if let outputDevice {
-            if !deviceTypes.contains(outputDevice) {
-                deviceTypes.append(outputDevice)
-            }
-        }
-
-        // bluetooth and earpiece should only be available in case we don't have a wired headset plugged
-        // otherwise we can never change the route to bluetooth or earpiece, iOS does not respect that
-        if deviceTypes.contains(AudioDeviceType.wired) {
-            deviceTypes = deviceTypes.filter { device in
-                device != AudioDeviceType.bluetooth && device != AudioDeviceType.earpiece
-            }
-        }
-
-        // NOTE: we use .input for the kind of all of these, since we only care about reporting mics
-        return deviceTypes.map { deviceType in
-            switch deviceType {
-            case .bluetooth:
-                return .init(
-                    deviceID: deviceType.deviceID,
-                    groupID: "",
-                    kind: .audio(.input),
-                    label: "Bluetooth Speaker & Mic"
-                )
-            case .speakerphone:
-                return .init(
-                    deviceID: deviceType.deviceID,
-                    groupID: "",
-                    kind: .audio(.input),
-                    label: "Built-in Speaker & Mic"
-                )
-            case .wired:
-                return .init(
-                    deviceID: deviceType.deviceID,
-                    groupID: "",
-                    kind: .audio(.input),
-                    label: "Wired Speaker & Mic"
-                )
-            case .earpiece:
-                return .init(
-                    deviceID: deviceType.deviceID,
-                    groupID: "",
-                    kind: .audio(.input),
-                    label: "Built-in Earpiece & Mic"
-                )
-            }
-        }
     }
 
     // MARK: - Notifications
@@ -206,40 +155,7 @@ final class AudioManager {
     }
 
     @objc private func routeDidChange(_ notification: Notification) {
-        guard
-            let userInfo = notification.userInfo,
-            let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
-            let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue)
-        else {
-            return
-        }
-
-        var audioManagerDidChangeDevices = false
-
-        switch reason {
-        case .newDeviceAvailable:
-            audioManagerDidChangeDevices = true
-        case .oldDeviceUnavailable:
-            audioManagerDidChangeDevices = true
-        case .override:
-            // Return in order to avoid an infinite config loop.
-            return
-        case .unknown, .categoryChange, .wakeFromSleep, .noSuitableRouteForCategory,
-            .routeConfigurationChange:
-            // Return for now, to avoid undesired infinite loops.
-            return
-        @unknown default:
-            Logger.shared.warn("Ignoring unknown audio route change reason: \(reason)")
-            return
-        }
-
-        if audioManagerDidChangeDevices {
-            self.configureAudioSession()
-            // We're firing this delegate *after* we're configuring the audio session so that in the delegate we can already assume a new device is ready for use
-            if isManaging {
-                self.delegate?.audioManagerDidChangeDevices(self)
-            }
-        }
+        refreshAvailableDevicesAndReconfigureIfNeeded()
     }
 
     @objc private func mediaServicesWereReset(_ notification: Notification) {
@@ -376,5 +292,93 @@ final class AudioManager {
                 Logger.shared.error("Error configuring preferred input audio port: \(error)")
             }
         }
+    }
+    
+    // MARK: - Available Devices
+    
+    private func refreshAvailableDevicesAndReconfigureIfNeeded(suppressDelegateCallbacks: Bool = false) {
+        if !isManaging {
+            return
+        }
+        let newAvailableDevices = getAvailableDevices()
+        if availableDevices != newAvailableDevices {
+            availableDevices = newAvailableDevices
+            configureAudioSession()
+            if !suppressDelegateCallbacks {
+                // We're firing this delegate *after* we're configuring the audio session so that in the delegate we can already assume a new device is ready for use
+                delegate?.audioManagerDidChangeAvailableDevices(self)
+            }
+        }
+    }
+    
+    // Adapted from WebrtcDevicesManager in Daily
+    private func getAvailableDevices() -> [Device] {
+        let audioSession = self.audioSession
+        let availableInputs = audioSession.availableInputs ?? []
+        let availableOutputs = audioSession.currentRoute.outputs
+
+        var deviceTypes = availableInputs.compactMap { input in
+            AudioDeviceType(sessionPort: input.portType)
+        }
+        // It always returns or earpiece or speakerphone on available inputs, depending on th category that
+        // we are using. So we need to add the one that is missing.
+        if deviceTypes.contains(AudioDeviceType.speakerphone) {
+            deviceTypes.append(AudioDeviceType.earpiece)
+        } else {
+            deviceTypes.append(AudioDeviceType.speakerphone)
+        }
+
+        // When we are using bluetooth as the default route,
+        // iOS does not list the bluetooth device on the list of availableInputs
+        let outputDevice = availableOutputs.first.flatMap { AudioDeviceType(sessionPort: $0.portType) }
+        if let outputDevice {
+            if !deviceTypes.contains(outputDevice) {
+                deviceTypes.append(outputDevice)
+            }
+        }
+
+        // bluetooth and earpiece should only be available in case we don't have a wired headset plugged
+        // otherwise we can never change the route to bluetooth or earpiece, iOS does not respect that
+        if deviceTypes.contains(AudioDeviceType.wired) {
+            deviceTypes = deviceTypes.filter { device in
+                device != AudioDeviceType.bluetooth && device != AudioDeviceType.earpiece
+            }
+        }
+
+        // NOTE: we use .input for the kind of all of these, since we only care about reporting mics
+        return deviceTypes.map { deviceType in
+            switch deviceType {
+            case .bluetooth:
+                return .init(
+                    deviceID: deviceType.deviceID,
+                    groupID: "",
+                    kind: .audio(.input),
+                    label: "Bluetooth Speaker & Mic"
+                )
+            case .speakerphone:
+                return .init(
+                    deviceID: deviceType.deviceID,
+                    groupID: "",
+                    kind: .audio(.input),
+                    label: "Built-in Speaker & Mic"
+                )
+            case .wired:
+                return .init(
+                    deviceID: deviceType.deviceID,
+                    groupID: "",
+                    kind: .audio(.input),
+                    label: "Wired Speaker & Mic"
+                )
+            case .earpiece:
+                return .init(
+                    deviceID: deviceType.deviceID,
+                    groupID: "",
+                    kind: .audio(.input),
+                    label: "Built-in Earpiece & Mic"
+                )
+            }
+        }
+        // A stable order helps us detect when available devices have changed
+        .sorted(by: { $0.deviceID < $1.deviceID })
     }
 }
